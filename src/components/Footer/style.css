@@ -1,0 +1,8 @@
+.footer {
+  position: sticky;
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 40px;
+  width: 100vw;
+  max-width: 100%;
+}
