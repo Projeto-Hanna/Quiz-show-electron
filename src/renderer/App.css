@@ -20,15 +20,6 @@
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
-main {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 40px;
-}
-
 @keyframes logo-spin {
   from {
     transform: rotate(0deg);

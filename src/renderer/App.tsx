@@ -1,25 +1,17 @@
+import { Routes, Route } from 'react-router-dom';
+
 import './App.css';
-import { Button, Footer, Logo, Menu } from './components';
+import { Home, HowToPlay } from './pages';
 
 function App() {
-  const exitApp = () => {
-    if (window.electron) {
-      window.electron.exitApp();
-    }
-  };
-
   return (
     <>
-      <main>
-        <Logo />
-        <Menu>
-          <Button>Jogar partida teste</Button>
-          <Button>Partida personalizada</Button>
-          <Button>Como jogar</Button>
-          <Button onClick={exitApp}>Sair</Button>
-        </Menu>
-      </main>
-      <Footer />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/test" />
+        <Route path="/play" />
+        <Route path="/how-to-play" element={<HowToPlay />} />
+      </Routes>
     </>
   );
 }

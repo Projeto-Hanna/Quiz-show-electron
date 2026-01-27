@@ -1,7 +1,8 @@
+import type { ReactElement } from 'react';
 import './style.css';
 
 type Props = {
-  children: string;
+  children: string | ReactElement;
   onClick?: () => void;
 };
 
