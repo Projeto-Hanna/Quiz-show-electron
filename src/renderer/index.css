@@ -17,6 +17,8 @@ a {
   font-weight: 500;
   color: white;
   text-decoration: inherit;
+  display: block;
+  width: 100%;
 }
 a:hover {
   color: white;
