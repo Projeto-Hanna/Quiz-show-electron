@@ -4,21 +4,20 @@
   "author": "Projeto Hanna",
   "version": "1.0.0",
   "type": "module",
-  "main": "dist-electron/main.js",
+  "main": "./out/main/index.js",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "start": "electron-vite preview",
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "dev:browser": "vite src/renderer",
+    "package": "electron-vite build && electron-builder",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write .",
-    "preview": "vite preview",
-    "electron:build": "tsc -p electron",
-    "electron": "electron dist-electron/main.js",
-    "dev:electron": "concurrently \"yarn dev\" \"yarn electron:dev\"",
-    "electron:dev": "tsc -p electron --watch",
-    "dist": "yarn build && yarn electron:build && electron-builder"
+    "format": "prettier --write ."
   },
   "dependencies": {
+    "@renderer": "link:./src/renderer",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
@@ -28,8 +27,9 @@
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
-    "concurrently": "^9.2.1",
     "electron": "^40.0.0",
+    "electron-builder": "^26.4.0",
+    "electron-vite": "^5.0.0",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
@@ -42,11 +42,17 @@
     "vite": "^7.2.4"
   },
   "build": {
-    "appId": "com.quizshowelectron.app",
-    "productName": "QuizShowElectron",
+    "appId": "com.projetohanna.quizshow",
+    "productName": "Quiz Show - Projeto Hanna",
+    "directories": {
+      "output": "dist"
+    },
     "files": [
-      "dist/**/*",
-      "dist-electron/**/*"
-    ]
+      "out/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "resources/icon.ico"
+    }
   }
 }

@@ -7,10 +7,11 @@ const __dirname = path.dirname(__filename);
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1000,
-    height: 700,
+    width: 1080,
+    height: 720,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, '../preload/index.mjs'),
+      sandbox: false,
     },
   });
 
@@ -19,12 +20,12 @@ function createWindow() {
   if (isDev) {
     win.loadURL('http://localhost:5173');
   } else {
-    win.loadFile(path.join(__dirname, '../dist/index.html'));
+    win.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
 }
 
-ipcMain.handle('ping', async () => {
-  return 'pong';
+ipcMain.on('app:exit', () => {
+  app.quit();
 });
 
 app.whenReady().then(createWindow);
