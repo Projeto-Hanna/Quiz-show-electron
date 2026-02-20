@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '../components';
 
-export const HowToPlay = () => {
+export const Settings = () => {
   return (
     <>
       <main>

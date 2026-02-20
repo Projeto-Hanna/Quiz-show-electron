@@ -12,19 +12,30 @@ export const Home = () => {
   return (
     <>
       <main>
-        <Logo />
-        <Menu>
-          <Button>
-            <Link to="/test">Jogar partida teste</Link>
-          </Button>
-          <Button>
-            <Link to="/play">Partida personalizada</Link>
-          </Button>
-          <Button>
-            <Link to="/how-to-play">Como jogar</Link>
-          </Button>
-          <Button onClick={exitApp}>Sair</Button>
-        </Menu>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            gap: '15vw',
+          }}
+        >
+          <Logo />
+          <Menu>
+            <Link to="/test">
+              <Button>Partida teste</Button>
+            </Link>
+            <Link to="/play">
+              <Button>Partida personalizada</Button>
+            </Link>
+            <Link to="/how-to-play">
+              <Button>Como jogar</Button>
+            </Link>
+            <Link to="/settings">
+              <Button>Configurações</Button>
+            </Link>
+            <Button onClick={exitApp}>Sair</Button>
+          </Menu>
+        </div>
       </main>
       <Footer />
     </>
