@@ -11,6 +11,12 @@ export const TestGame = () => {
       options: ['Sim', 'Não', 'Talvez', 'Não sei'],
       answer: 0,
     },
+    {
+      id: 2,
+      question: 'O camelo sabe assobiar??',
+      options: ['Sim', 'Não', 'Talvez', 'Não sei'],
+      answer: 0,
+    },
   ];
 
   return (

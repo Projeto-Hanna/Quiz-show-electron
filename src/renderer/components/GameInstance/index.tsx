@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Question } from '../../types';
 import { Button } from '../Button';
 import { AlarmClock, Trophy } from 'lucide-react';
@@ -24,6 +24,24 @@ export const GameInstance = (props: Props) => {
 
   const currentQuestion = questions[currentIndex];
 
+  useEffect(() => {
+    if (isGameFinished) return;
+
+    const timerId = setInterval(() => {
+      setQuestionTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerId);
+          setIsGameFinished(true);
+          return 0;
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timerId);
+  }, [currentIndex, isGameFinished]);
+
   const proceedToNextQuestion = (optionIndex: number) => {
     const isRightAnswer = currentQuestion.answer === optionIndex;
 
@@ -45,7 +63,13 @@ export const GameInstance = (props: Props) => {
   }
 
   return (
-    <div>
+    <div         style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'column',
+      gap: '20px',
+    }}>
       <div
         style={{
           display: 'flex',
@@ -64,7 +88,8 @@ export const GameInstance = (props: Props) => {
       </div>
 
       <Paper>
-        <Typography variant="h3">{currentQuestion.question}</Typography>
+        <Typography variant="h4" gutterBottom>Pergunta {currentIndex + 1} de {questions.length}:</Typography>
+        <Typography variant="h3" gutterBottom>{currentQuestion.question}</Typography>
       </Paper>
 
       <Grid container spacing={4}>
