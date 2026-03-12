@@ -1,25 +1,29 @@
 import { useEffect, useState } from 'react';
-import type { Question } from '../../types';
-import { Button } from '../Button';
 import { AlarmClock, Trophy } from 'lucide-react';
-import { Grid, Paper, Typography } from '@mui/material';
+import { Box, Grid, Paper, Stack, Typography } from '@mui/material';
+
+import type { Question } from '../../types';
+import { VictoryScreen } from '../VictoryScreen';
+import { useSettings } from '../../context/SettingsContext';
+import { Button } from '../Button';
 
 type Props = {
   questions: Question[];
 };
 
-// todo: criar settings geral de perguntas
-const TIME_PER_QUESTION_IN_SECONDS = 15;
 const POINTS_PER_ANSWER = 100;
 
 export const GameInstance = (props: Props) => {
   const { questions } = props;
+  const {
+    settings: { timePerQuestionInSeconds },
+  } = useSettings();
 
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [isGameFinished, setIsGameFinished] = useState<boolean>(false);
   const [totalScore, setTotalScore] = useState<number>(0);
   const [questionTimer, setQuestionTimer] = useState<number>(
-    TIME_PER_QUESTION_IN_SECONDS,
+    timePerQuestionInSeconds,
   );
 
   const currentQuestion = questions[currentIndex];
@@ -55,41 +59,64 @@ export const GameInstance = (props: Props) => {
     }
 
     setCurrentIndex((prev) => prev + 1);
-    setQuestionTimer(TIME_PER_QUESTION_IN_SECONDS);
+    setQuestionTimer(timePerQuestionInSeconds);
   };
 
   if (isGameFinished || questions.length === 0) {
-    return <>Cabou: {totalScore}</>;
+    return <VictoryScreen points={totalScore} />;
   }
 
   return (
-    <div         style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexDirection: 'column',
-      gap: '20px',
-    }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '50px',
+    <Box
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      gap={6}
+      flexDirection="column"
+    >
+      <Stack
+        direction="row"
+        spacing={6}
+        justifyContent="center"
+        alignItems="center"
+      >
+        <Paper elevation={3} sx={{ padding: 2 }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Trophy size={32} />
+            <Typography variant="h5">{totalScore} pontos</Typography>
+          </Stack>
+        </Paper>
+
+        <Paper elevation={3} sx={{ padding: 2 }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <AlarmClock size={32} />
+            <Typography variant="h5">
+              {questionTimer} segundos restantes
+            </Typography>
+          </Stack>
+        </Paper>
+      </Stack>
+
+      <Paper
+        elevation={3}
+        sx={{
+          paddingTop: 2,
+          paddingRight: 6,
+          paddingLeft: 6,
+          paddingBottom: 2,
         }}
       >
-        <Typography>
-          <Trophy />
-          {totalScore} pontos
+        <Typography
+          variant="h4"
+          fontWeight="bold"
+          sx={{ textTransform: 'uppercase' }}
+          gutterBottom
+        >
+          Pergunta {currentIndex + 1} de {questions.length}:
         </Typography>
-        <Typography>
-          <AlarmClock /> {questionTimer} segundos restantes
+        <Typography variant="h3" gutterBottom>
+          {currentQuestion.question}
         </Typography>
-      </div>
-
-      <Paper>
-        <Typography variant="h4" gutterBottom>Pergunta {currentIndex + 1} de {questions.length}:</Typography>
-        <Typography variant="h3" gutterBottom>{currentQuestion.question}</Typography>
       </Paper>
 
       <Grid container spacing={4}>
@@ -106,6 +133,6 @@ export const GameInstance = (props: Props) => {
           );
         })}
       </Grid>
-    </div>
+    </Box>
   );
 };

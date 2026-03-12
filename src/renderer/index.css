@@ -1,10 +1,13 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
+  background-image:
+    url('./assets/gplay.png'), linear-gradient(to bottom, #240915, #84042b);
+  background-repeat: repeat, no-repeat;
+  background-size: auto, cover;
   background-color: #242424;
 
   font-synthesis: none;
@@ -42,7 +45,6 @@ button {
   border: 1px solid transparent;
   font-size: 1em;
   font-weight: 500;
-  font-family: inherit;
   background-color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.25s;
@@ -61,7 +63,7 @@ main {
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 40px;
+  gap: 50px;
 }
 
 @media (prefers-color-scheme: light) {

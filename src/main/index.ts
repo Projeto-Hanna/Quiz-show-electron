@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, nativeImage } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, shell } from 'electron';
 import path, { join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -10,7 +10,7 @@ function createWindow() {
     ? join(process.resourcesPath, 'public/logo.png')
     : join(__dirname, '../../resources/logo.png');
   const customIcon = nativeImage.createFromPath(iconPath);
-  
+
   const win = new BrowserWindow({
     width: 1080,
     height: 720,
@@ -33,6 +33,16 @@ function createWindow() {
 ipcMain.on('app:exit', () => {
   app.quit();
 });
+
+ipcMain.on('app:open-external', async (_event, url: string) => {
+  if (!url) return;
+
+  try {
+    await shell.openExternal(url);
+  } catch {}
+});
+
+Menu.setApplicationMenu(null);
 
 app.whenReady().then(createWindow);
 

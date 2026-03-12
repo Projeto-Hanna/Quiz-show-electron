@@ -15,11 +15,17 @@ const StyledButton = styled(MUIButton)<ButtonProps>(({ theme }) => ({
 type Props = {
   children: string | ReactElement;
   onClick?: () => void;
+  icon?: ReactElement;
 };
 
-export const Button = ({ children, onClick }: Props) => {
+export const Button = ({ children, onClick, icon }: Props) => {
   return (
-    <StyledButton variant="contained" size="large" onClick={onClick}>
+    <StyledButton
+      variant="contained"
+      size="large"
+      onClick={onClick}
+      startIcon={icon}
+    >
       {children}
     </StyledButton>
   );
