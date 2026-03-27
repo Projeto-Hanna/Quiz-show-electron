@@ -22,7 +22,7 @@ export const Home = () => {
           <Title>Quiz Show do Projeto Hanna</Title>
           <Box
             display="flex"
-            gap="12vw"
+            gap="4vw"
             alignItems="center"
             justifyContent="center"
           >

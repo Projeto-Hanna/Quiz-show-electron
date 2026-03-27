@@ -61,7 +61,7 @@ export const VictoryScreen = (props: Props) => {
             })}
           </Box>
         ) : (
-          <p>teste</p>
+          <Text variant="h5">Nenhuma pergunta encontrada</Text>
         )}
       </Paper>
     </Menu>

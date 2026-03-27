@@ -1,22 +1,15 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react';
-
-type Settings = {
-  timePerQuestionInSeconds: number;
-  unansweredQuestionBehavior: 'next-question' | 'victory-screen';
-};
-
-type SettingsContextValue = {
-  settings: Settings;
-  updateSettings: (partial: Partial<Settings>) => void;
-};
+import {
+  SettingsContext,
+  type Settings,
+  type SettingsContextValue,
+} from './internalSettingsContext';
 
 const DEFAULT_SETTINGS: Settings = {
   timePerQuestionInSeconds: 15,
@@ -24,10 +17,6 @@ const DEFAULT_SETTINGS: Settings = {
 };
 
 const STORAGE_KEY = 'quiz-show-settings';
-
-const SettingsContext = createContext<SettingsContextValue | undefined>(
-  undefined,
-);
 
 type Props = {
   children: ReactNode;
@@ -82,14 +71,4 @@ export const SettingsProvider = ({ children }: Props) => {
       {children}
     </SettingsContext.Provider>
   );
-};
-
-export const useSettings = () => {
-  const ctx = useContext(SettingsContext);
-
-  if (!ctx) {
-    throw new Error('useSettings must be used within a SettingsProvider');
-  }
-
-  return ctx;
 };

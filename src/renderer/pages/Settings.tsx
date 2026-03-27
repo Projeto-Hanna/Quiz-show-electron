@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   Box,
   FormControl,
@@ -11,7 +12,7 @@ import { pink } from '@mui/material/colors';
 import { Link } from 'react-router-dom';
 
 import { Button, Divider, Menu, Subtitle, Title, Text } from '../components';
-import { useSettings } from '../context/SettingsContext';
+import { useSettings } from '../context/useSettings';
 
 export const Settings = () => {
   const {
@@ -36,6 +37,13 @@ export const Settings = () => {
     updateSettings({ unansweredQuestionBehavior: value });
   };
 
+  const readableQuestionTime = useMemo(() => {
+    const minutes = Math.trunc(timePerQuestionInSeconds / 60);
+    const seconds = timePerQuestionInSeconds % 60;
+
+    return `${minutes} minuto(s) e ${seconds} segundo(s)`;
+  }, [timePerQuestionInSeconds]);
+
   return (
     <>
       <main>
@@ -56,8 +64,8 @@ export const Settings = () => {
                 Defina o tempo limite (em segundos) que cada jogador terá para
                 responder uma pergunta.
               </Text>
-              <Text variant="h5" fontWeight="bold">
-                Tempo atual: {timePerQuestionInSeconds} segundos.
+              <Text variant="h5" fontWeight="bold" color="black">
+                Tempo atual: {readableQuestionTime}.
               </Text>
             </Box>
 
@@ -133,7 +141,11 @@ export const Settings = () => {
                       }}
                     />
                   }
-                  label="Pular para a próxima pergunta"
+                  label={
+                    <Text variant="h6" color="black" fontWeight="regular">
+                      Pular para a próxima pergunta
+                    </Text>
+                  }
                 />
                 <FormControlLabel
                   value="victory-screen"
@@ -147,7 +159,11 @@ export const Settings = () => {
                       }}
                     />
                   }
-                  label="Ir direto para a tela de vitória"
+                  label={
+                    <Text variant="h6" color="black" fontWeight="regular">
+                      Ir direto para a tela de vitória
+                    </Text>
+                  }
                 />
               </RadioGroup>
             </FormControl>

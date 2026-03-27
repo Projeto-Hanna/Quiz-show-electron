@@ -4,23 +4,15 @@ const StyledTypography = styled(Typography)<TypographyProps>(() => ({
   color: '#b80047',
 }));
 
-export const Text = ({
-  children,
-  fontWeight,
-  color,
-  variant,
-  textTransform,
-}: TypographyProps) => {
+export const Text = (props: TypographyProps) => {
+  const { sx, color } = props;
   return (
     <StyledTypography
-      textTransform={textTransform}
-      fontWeight={fontWeight}
-      variant={variant}
+      {...props}
       sx={{
+        ...sx,
         color: color,
       }}
-    >
-      {children}
-    </StyledTypography>
+    />
   );
 };

@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlarmClock, Trophy } from 'lucide-react';
 import { Box, Grid, Paper, Stack, Typography } from '@mui/material';
 
 import type { Question, UserAnswer } from '../../types';
 import { VictoryScreen } from '../VictoryScreen';
-import { useSettings } from '../../context/SettingsContext';
+import { useSettings } from '../../context/useSettings';
 import { Button } from '../Button';
 import { Subtitle } from '../Subtitle';
 
@@ -33,10 +33,16 @@ export const GameInstance = (props: Props) => {
   const [questionTimer, setQuestionTimer] = useState<number>(
     timePerQuestionInSeconds,
   );
+  const timeoutHandledForQuestionRef = useRef<number | null>(null);
 
   const currentQuestion = questions[currentIndex];
 
-  const handleTimeout = () => {
+  const handleTimeout = useCallback(() => {
+    if (timeoutHandledForQuestionRef.current === currentIndex) {
+      return;
+    }
+    timeoutHandledForQuestionRef.current = currentIndex;
+
     if (unansweredQuestionBehavior === 'victory-screen') {
       setIsGameFinished(true);
       return;
@@ -49,7 +55,12 @@ export const GameInstance = (props: Props) => {
 
     setCurrentIndex((prev) => prev + 1);
     setQuestionTimer(timePerQuestionInSeconds);
-  };
+  }, [
+    currentIndex,
+    questions.length,
+    timePerQuestionInSeconds,
+    unansweredQuestionBehavior,
+  ]);
 
   useEffect(() => {
     if (isGameFinished) return;
