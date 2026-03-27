@@ -12,7 +12,7 @@ import {
 } from './internalSettingsContext';
 
 const DEFAULT_SETTINGS: Settings = {
-  timePerQuestionInSeconds: 15,
+  timePerQuestionInSeconds: 30,
   unansweredQuestionBehavior: 'next-question',
 };
 
