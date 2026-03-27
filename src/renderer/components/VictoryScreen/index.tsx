@@ -43,7 +43,7 @@ export const VictoryScreen = (props: Props) => {
                     alignItems="start"
                     gap="6px"
                   >
-                    <Subtitle>
+                    <Subtitle textAlign="left">
                       {index + 1}. {question.question}
                     </Subtitle>
                     <Text color="green" variant="h4">
