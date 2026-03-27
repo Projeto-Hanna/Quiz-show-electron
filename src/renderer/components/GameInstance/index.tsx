@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { AlarmClock, Trophy } from 'lucide-react';
 import { Box, Grid, Paper, Stack, Typography } from '@mui/material';
 
-import type { Question } from '../../types';
+import type { Question, UserAnswer } from '../../types';
 import { VictoryScreen } from '../VictoryScreen';
 import { useSettings } from '../../context/SettingsContext';
 import { Button } from '../Button';
+import { Subtitle } from '../Subtitle';
 
 type Props = {
   questions: Question[];
@@ -13,20 +14,42 @@ type Props = {
 
 const POINTS_PER_ANSWER = 100;
 
+const getOptionLetter = (index: number): string => {
+  const startingLetter = 'A';
+  const startingLetterCode = startingLetter.charCodeAt(0);
+  return `${String.fromCharCode(startingLetterCode + index)})`;
+};
+
 export const GameInstance = (props: Props) => {
   const { questions } = props;
   const {
-    settings: { timePerQuestionInSeconds },
+    settings: { timePerQuestionInSeconds, unansweredQuestionBehavior },
   } = useSettings();
 
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [isGameFinished, setIsGameFinished] = useState<boolean>(false);
   const [totalScore, setTotalScore] = useState<number>(0);
+  const [selectedAnswers, setSelectedAnswers] = useState<UserAnswer[]>([]);
   const [questionTimer, setQuestionTimer] = useState<number>(
     timePerQuestionInSeconds,
   );
 
   const currentQuestion = questions[currentIndex];
+
+  const handleTimeout = () => {
+    if (unansweredQuestionBehavior === 'victory-screen') {
+      setIsGameFinished(true);
+      return;
+    }
+
+    if (currentIndex === questions.length - 1) {
+      setIsGameFinished(true);
+      return;
+    }
+
+    setCurrentIndex((prev) => prev + 1);
+    setQuestionTimer(timePerQuestionInSeconds);
+  };
 
   useEffect(() => {
     if (isGameFinished) return;
@@ -35,7 +58,7 @@ export const GameInstance = (props: Props) => {
       setQuestionTimer((prev) => {
         if (prev <= 1) {
           clearInterval(timerId);
-          setIsGameFinished(true);
+          handleTimeout();
           return 0;
         }
 
@@ -44,9 +67,13 @@ export const GameInstance = (props: Props) => {
     }, 1000);
 
     return () => clearInterval(timerId);
-  }, [currentIndex, isGameFinished]);
+  }, [currentIndex, isGameFinished, handleTimeout]);
 
   const proceedToNextQuestion = (optionIndex: number) => {
+    setSelectedAnswers((prev) => [
+      ...prev,
+      { questionPosition: currentIndex, selectedOption: optionIndex },
+    ]);
     const isRightAnswer = currentQuestion.answer === optionIndex;
 
     if (isRightAnswer) {
@@ -63,7 +90,13 @@ export const GameInstance = (props: Props) => {
   };
 
   if (isGameFinished || questions.length === 0) {
-    return <VictoryScreen points={totalScore} />;
+    return (
+      <VictoryScreen
+        selectedAnswers={selectedAnswers}
+        questions={questions}
+        points={totalScore}
+      />
+    );
   }
 
   return (
@@ -83,16 +116,14 @@ export const GameInstance = (props: Props) => {
         <Paper elevation={3} sx={{ padding: 2 }}>
           <Stack direction="row" spacing={1} alignItems="center">
             <Trophy size={32} />
-            <Typography variant="h5">{totalScore} pontos</Typography>
+            <Subtitle>{totalScore} pontos</Subtitle>
           </Stack>
         </Paper>
 
         <Paper elevation={3} sx={{ padding: 2 }}>
           <Stack direction="row" spacing={1} alignItems="center">
             <AlarmClock size={32} />
-            <Typography variant="h5">
-              {questionTimer} segundos restantes
-            </Typography>
+            <Subtitle>{questionTimer} segundos restantes</Subtitle>
           </Stack>
         </Paper>
       </Stack>
@@ -106,29 +137,31 @@ export const GameInstance = (props: Props) => {
           paddingBottom: 2,
         }}
       >
-        <Typography
-          variant="h4"
-          fontWeight="bold"
-          sx={{ textTransform: 'uppercase' }}
-          gutterBottom
-        >
+        <Subtitle>
           Pergunta {currentIndex + 1} de {questions.length}:
-        </Typography>
-        <Typography variant="h3" gutterBottom>
-          {currentQuestion.question}
-        </Typography>
+        </Subtitle>
+        <Typography variant="h3">{currentQuestion.question}</Typography>
       </Paper>
 
       <Grid container spacing={4}>
         {currentQuestion.options.map((option, index) => {
+          const shouldCenterLastOption =
+            currentQuestion.options.length % 2 &&
+            index === currentQuestion.options.length - 1;
+
           return (
-            <Grid size={6}>
-              <Button
-                key={`game-option-${index}`}
-                onClick={() => proceedToNextQuestion(index)}
-              >
-                {option}
-              </Button>
+            <Grid
+              key={`game-option-${index}`}
+              size={6}
+              offset={shouldCenterLastOption ? 3 : 0}
+            >
+              <div>
+                <Button onClick={() => proceedToNextQuestion(index)}>
+                  <>
+                    {getOptionLetter(index)} {option}
+                  </>
+                </Button>
+              </div>
             </Grid>
           );
         })}

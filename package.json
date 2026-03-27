@@ -32,13 +32,17 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.57.2",
     "@vitejs/plugin-react": "^5.1.1",
     "electron": "^40.0.0",
     "electron-builder": "^26.4.0",
     "electron-vite": "^5.0.0",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-n": "^17.24.0",
     "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-promise": "^7.2.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
@@ -49,7 +53,7 @@
   },
   "build": {
     "appId": "com.projetohanna.quizshow",
-    "productName": "Quiz Show - Projeto Hanna",
+    "productName": "Quiz Show do Projeto Hanna",
     "directories": {
       "output": "dist"
     },

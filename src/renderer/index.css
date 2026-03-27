@@ -1,14 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
+
 :root {
   font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  background-image:
-    url('./assets/gplay.png'), linear-gradient(to bottom, #240915, #84042b);
   background-repeat: repeat, no-repeat;
   background-size: auto, cover;
-  background-color: #242424;
+  background: rgb(68, 0, 40);
+  background: -webkit-linear-gradient(
+    135deg,
+    #e42c2c,
+    #ff0a69,
+    #51bddf,
+    #afe1f1
+  );
+  background: linear-gradient(135deg, #e42c2c, #ff0a69, #51bddf, #afe1f1);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -40,41 +47,14 @@ h1 {
   line-height: 1.1;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  font-size: 1em;
-  font-weight: 500;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
 main {
   flex: 1;
+  width: 100%;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 50px;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+  gap: 5vh;
+  padding: clamp(12px, 2.5vw, 32px);
 }

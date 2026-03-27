@@ -1,15 +1,38 @@
 import { Link } from 'react-router-dom';
-import { Typography } from '@mui/material';
 
-import { Button } from '../components';
+import { Button, Divider, Menu, Subtitle, Title } from '../components';
+import { Paper } from '@mui/material';
 
 export const HowToPlay = () => {
   return (
     <>
       <main>
-        <Typography variant="h3">Como jogar</Typography>
+        <Menu direction="column">
+          <Title>Como jogar</Title>
+          <Paper
+            elevation={3}
+            sx={{
+              paddingX: 6,
+              paddingY: 2,
+              maxWidth: 600,
+            }}
+          >
+            <Subtitle>Partida teste</Subtitle>
+          </Paper>
+          <Divider color="light" />
+          <Paper
+            elevation={3}
+            sx={{
+              paddingX: 6,
+              paddingY: 2,
+              maxWidth: 600,
+            }}
+          >
+            <Subtitle>Partida teste</Subtitle>
+          </Paper>
+        </Menu>
         <Link to="/">
-          <Button>Voltar</Button>
+          <Button fitContent>Voltar</Button>
         </Link>
       </main>
     </>

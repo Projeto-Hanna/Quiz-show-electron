@@ -6,16 +6,25 @@ import type { Question } from '../types';
 export const TestGame = () => {
   const questions: Question[] = [
     {
-      id: 1,
-      question: 'O camelo sabe assobiar?',
-      options: ['Sim', 'Não', 'Talvez', 'Não sei'],
+      question: 'Quem é a principal personagem do Projeto Hanna?',
+      options: ['Hanna', 'Byte', 'Monika', 'Projeto'],
       answer: 0,
     },
     {
-      id: 2,
-      question: 'O camelo sabe assobiar??',
-      options: ['Sim', 'Não', 'Talvez', 'Não sei'],
-      answer: 0,
+      question: 'Como se parece um código binário?',
+      options: ['#fefefe', 'ABCDEFG', '010111'],
+      answer: 2,
+    },
+    {
+      question: 'Qual das seguintes peças não faz parte de um computador?',
+      options: [
+        'Fonte de energia',
+        'Processador',
+        'Memória RAM',
+        'Sanduíche de picles',
+        'Placa-mãe',
+      ],
+      answer: 3,
     },
   ];
 
@@ -24,7 +33,7 @@ export const TestGame = () => {
       <main>
         <GameInstance questions={questions} />
         <Link to="/">
-          <Button>Voltar</Button>
+          <Button fitContent>Voltar</Button>
         </Link>
       </main>
     </>

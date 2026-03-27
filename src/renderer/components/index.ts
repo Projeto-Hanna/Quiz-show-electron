@@ -4,3 +4,7 @@ export * from './Footer';
 export * from './Menu';
 export * from './GameInstance';
 export * from './VictoryScreen';
+export * from './Title';
+export * from './Subtitle';
+export * from './Text';
+export * from './Divider';

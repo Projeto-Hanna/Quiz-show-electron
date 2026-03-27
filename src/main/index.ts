@@ -1,4 +1,11 @@
-import { app, BrowserWindow, ipcMain, Menu, nativeImage, shell } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  Menu,
+  nativeImage,
+  shell,
+} from 'electron';
 import path, { join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -12,9 +19,8 @@ function createWindow() {
   const customIcon = nativeImage.createFromPath(iconPath);
 
   const win = new BrowserWindow({
-    width: 1080,
-    height: 720,
     icon: customIcon,
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.mjs'),
       sandbox: false,
@@ -22,6 +28,9 @@ function createWindow() {
   });
 
   const isDev = !app.isPackaged;
+
+  win.maximize();
+  win.show();
 
   if (isDev) {
     win.loadURL('http://localhost:5173');

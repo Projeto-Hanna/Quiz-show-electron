@@ -1,0 +1,24 @@
+.fancy {
+  position: relative;
+  padding: 14px;
+}
+
+.fancy::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+
+  background: linear-gradient(135deg, #e42c2c, #ff0a69, #51bddf, #afe1f1);
+
+  -webkit-mask:
+    conic-gradient(from 45deg at left, #000 0 25%, transparent 0) 0 0 / 51% 100%
+      no-repeat,
+    conic-gradient(from -135deg at right, #000 0 25%, transparent 0) 100% 0 /
+      51% 100% no-repeat;
+  mask:
+    conic-gradient(from 45deg at left, #000 0 25%, transparent 0) 0 0 / 51% 100%
+      no-repeat,
+    conic-gradient(from -135deg at right, #000 0 25%, transparent 0) 100% 0 /
+      51% 100% no-repeat;
+}

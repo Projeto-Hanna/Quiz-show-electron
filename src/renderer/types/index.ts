@@ -1,6 +1,10 @@
 export type Question = {
-  id: number;
   question: string;
   options: string[];
   answer: number;
+};
+
+export type UserAnswer = {
+  questionPosition: number;
+  selectedOption: number;
 };

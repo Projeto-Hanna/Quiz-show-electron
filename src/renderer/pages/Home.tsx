@@ -4,9 +4,9 @@ import EditSquareIcon from '@mui/icons-material/EditSquare';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import { Box } from '@mui/material';
 
-import { Button, Footer, Logo, Menu } from '../components';
-import { Box, Typography } from '@mui/material';
+import { Button, Footer, Logo, Menu, Title } from '../components';
 
 export const Home = () => {
   const exitApp = () => {
@@ -18,28 +18,35 @@ export const Home = () => {
   return (
     <>
       <main>
-        <Typography variant="h2">Quiz Show - Projeto Hanna</Typography>
-        <Box display="flex" flexDirection="row" gap="15vw">
-          <Logo />
-          <Menu>
-            <Link to="/test">
-              <Button icon={<PlayArrowIcon />}>Partida teste</Button>
-            </Link>
-            <Link to="/play">
-              <Button icon={<EditSquareIcon />}>Partida personalizada</Button>
-            </Link>
-            <Link to="/how-to-play">
-              <Button icon={<LibraryBooksIcon />}>Como jogar</Button>
-            </Link>
-            <Link to="/settings">
-              <Button icon={<SettingsIcon />}>Configurações</Button>
-            </Link>
-            <Button icon={<ExitToAppIcon />} onClick={exitApp}>
-              Sair
-            </Button>
-          </Menu>
-        </Box>
-        <Footer />
+        <Menu direction="column" gap="40px">
+          <Title>Quiz Show do Projeto Hanna</Title>
+          <Box
+            display="flex"
+            gap="12vw"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <Logo />
+            <Box display="flex" flexDirection="column" gap="20px">
+              <Link to="/test">
+                <Button icon={<PlayArrowIcon />}>Partida teste</Button>
+              </Link>
+              <Link to="/play">
+                <Button icon={<EditSquareIcon />}>Partida personalizada</Button>
+              </Link>
+              <Link to="/how-to-play">
+                <Button icon={<LibraryBooksIcon />}>Como jogar</Button>
+              </Link>
+              <Link to="/settings">
+                <Button icon={<SettingsIcon />}>Configurações</Button>
+              </Link>
+              <Button icon={<ExitToAppIcon />} onClick={exitApp}>
+                Sair
+              </Button>
+            </Box>
+          </Box>
+          <Footer />
+        </Menu>
       </main>
     </>
   );

@@ -10,6 +10,7 @@ import {
 
 type Settings = {
   timePerQuestionInSeconds: number;
+  unansweredQuestionBehavior: 'next-question' | 'victory-screen';
 };
 
 type SettingsContextValue = {
@@ -19,6 +20,7 @@ type SettingsContextValue = {
 
 const DEFAULT_SETTINGS: Settings = {
   timePerQuestionInSeconds: 15,
+  unansweredQuestionBehavior: 'next-question',
 };
 
 const STORAGE_KEY = 'quiz-show-settings';
@@ -45,6 +47,9 @@ export const SettingsProvider = ({ children }: Props) => {
       ) {
         return {
           timePerQuestionInSeconds: parsed.timePerQuestionInSeconds,
+          unansweredQuestionBehavior:
+            parsed.unansweredQuestionBehavior ??
+            DEFAULT_SETTINGS.unansweredQuestionBehavior,
         };
       }
 
@@ -88,4 +93,3 @@ export const useSettings = () => {
 
   return ctx;
 };
-
