@@ -169,7 +169,7 @@ export const HowToPlay = () => {
                           <ListItem sx={{ display: 'list-item' }}>
                             <ListItemText
                               primary={
-                                <Text variant="body1">
+                                <Text variant="h6">
                                   Você passará diretamente para a tela de
                                   encerramento da partida;
                                 </Text>
@@ -179,7 +179,7 @@ export const HowToPlay = () => {
                           <ListItem sx={{ display: 'list-item' }}>
                             <ListItemText
                               primary={
-                                <Text variant="body1">
+                                <Text variant="h6">
                                   Você passará para a próxima pergunta, se
                                   houver. Se não houver, irá para a tela de
                                   encerramento.
