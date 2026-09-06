@@ -53,7 +53,7 @@ export const Settings = () => {
           <Paper
             elevation={3}
             sx={{
-              paddingX: 6,
+              paddingX: { xs: 2, sm: 6 },
               paddingY: 2,
               maxWidth: 720,
             }}
@@ -108,7 +108,7 @@ export const Settings = () => {
           <Paper
             elevation={3}
             sx={{
-              paddingX: 6,
+              paddingX: { xs: 2, sm: 6 },
               paddingY: 2,
               maxWidth: 720,
             }}
@@ -124,9 +124,9 @@ export const Settings = () => {
                 name="unanswered-question-behavior"
                 value={unansweredQuestionBehavior}
                 onChange={handleUnansweredBehaviorChange}
-                row
                 sx={{
-                  gap: { sm: 1, md: 4, lg: 4 },
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  gap: { xs: 1, sm: 2, md: 4, lg: 4 },
                 }}
               >
                 <FormControlLabel

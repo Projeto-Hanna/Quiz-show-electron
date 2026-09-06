@@ -22,12 +22,13 @@ export const Home = () => {
           <Title>Quiz Show do Projeto Hanna</Title>
           <Box
             display="flex"
-            gap="4vw"
+            flexDirection={{ xs: 'column', sm: 'row' }}
+            gap={{ xs: '20px', sm: '4vw' }}
             alignItems="center"
             justifyContent="center"
           >
             <Logo />
-            <Box display="flex" flexDirection="column" gap="20px">
+            <Box display="flex" flexDirection="column" gap="20px" width={{ xs: '100%', sm: 'auto' }}>
               <Link to="/test">
                 <Button icon={<PlayArrowIcon />}>Partida teste</Button>
               </Link>

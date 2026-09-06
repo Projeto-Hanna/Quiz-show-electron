@@ -3,8 +3,11 @@ import { Button as MUIButton, type ButtonProps } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { pink } from '@mui/material/colors';
 
-const StyledButton = styled(MUIButton)<ButtonProps>(() => ({
-  maxWidth: '40vw',
+const StyledButton = styled(MUIButton)<ButtonProps>(({ theme }) => ({
+  maxWidth: 'none',
+  [theme.breakpoints.up('sm')]: {
+    maxWidth: '40vw',
+  },
   color: pink[500],
   backgroundColor: 'white',
   '&:hover': {

@@ -1,5 +1,5 @@
 interface Window {
-  electron: {
+  electron?: {
     exitApp: () => void;
     openExternal: (url: string) => void;
   };

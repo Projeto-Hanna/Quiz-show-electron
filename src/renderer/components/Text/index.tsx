@@ -5,13 +5,13 @@ const StyledTypography = styled(Typography)<TypographyProps>(() => ({
 }));
 
 export const Text = (props: TypographyProps) => {
-  const { sx, color } = props;
+  const { sx, color, ...rest } = props;
   return (
     <StyledTypography
-      {...props}
+      {...rest}
       sx={{
+        ...(color && { color }),
         ...sx,
-        color: color,
       }}
     />
   );

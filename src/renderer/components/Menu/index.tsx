@@ -1,9 +1,9 @@
 import { Box } from '@mui/material';
 import './style.css';
-import type { ReactElement } from 'react';
+import type { ReactNode } from 'react';
 
 type Props = {
-  children: ReactElement | ReactElement[];
+  children: ReactNode;
   direction: 'row' | 'column';
   gap?: number | string;
 };

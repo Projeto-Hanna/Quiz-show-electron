@@ -287,7 +287,7 @@ export const PlayGame = () => {
           <Stack spacing={3} sx={{ width: 'min(1000px, 90vw)' }}>
             <Title variant="h3">Criar Partida</Title>
 
-            <Paper elevation={3} sx={{ p: 3 }}>
+            <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 } }}>
               <Stack spacing={2}>
                 <Subtitle>1) Carregar JSON</Subtitle>
                 <Text variant="h5" color="black">
@@ -310,7 +310,7 @@ export const PlayGame = () => {
 
             <Divider color="light" />
 
-            <Paper elevation={3} sx={{ p: 3 }}>
+            <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 } }}>
               <Stack spacing={2}>
                 <Subtitle>2) Montar via formulário</Subtitle>
 
@@ -355,9 +355,9 @@ export const PlayGame = () => {
                       {question.options.map((option, optionIndex) => (
                         <Stack
                           key={`question-${questionIndex}-option-${optionIndex}`}
-                          direction="row"
+                          direction={{ xs: 'column', sm: 'row' }}
                           spacing={1}
-                          alignItems="center"
+                          alignItems={{ xs: 'flex-start', sm: 'center' }}
                         >
                           <TextField
                             fullWidth

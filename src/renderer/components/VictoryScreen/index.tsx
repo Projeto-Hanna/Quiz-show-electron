@@ -1,21 +1,23 @@
 import { Box, Paper } from '@mui/material';
+import { RotateCcw } from 'lucide-react';
 import { Title } from '../Title';
-import { Divider, Menu, Subtitle, Text } from '..';
+import { Button, Divider, Menu, Subtitle, Text } from '..';
 import type { Question, UserAnswer } from '../../types';
 
 type Props = {
   points: number;
   questions: Question[];
   selectedAnswers: UserAnswer[];
+  onRestart?: () => void;
 };
 
 export const VictoryScreen = (props: Props) => {
-  const { points, questions, selectedAnswers } = props;
+  const { points, questions, selectedAnswers, onRestart } = props;
 
   return (
-    <Menu direction="column">
+    <Menu direction="column" gap={4}>
       <Title>Você ganhou {points} pontos!</Title>
-      <Paper elevation={3} sx={{ padding: 4 }}>
+      <Paper elevation={3} sx={{ padding: { xs: 2, sm: 4 } }}>
         {questions.length ? (
           <Box
             display="flex"
@@ -36,7 +38,7 @@ export const VictoryScreen = (props: Props) => {
                 : 'Não respondida';
 
               return (
-                <>
+                <Box key={index}>
                   <Box
                     display="flex"
                     flexDirection="column"
@@ -46,17 +48,17 @@ export const VictoryScreen = (props: Props) => {
                     <Subtitle textAlign="left">
                       {index + 1}. {question.question}
                     </Subtitle>
-                    <Text color="green" variant="h4">
+                    <Text color="green" sx={{ fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' }, fontWeight: 'bold' }}>
                       RESPOSTA: {question.options[question.answer]}
                     </Text>
                     {!userIsRight && (
-                      <Text color="red" variant="h4">
+                      <Text color="red" sx={{ fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' }, fontWeight: 'bold' }}>
                         SUA ESCOLHA: {userAnswerOutput}
                       </Text>
                     )}
                   </Box>
                   {index < questions.length - 1 && <Divider color="dark" />}
-                </>
+                </Box>
               );
             })}
           </Box>
@@ -64,6 +66,12 @@ export const VictoryScreen = (props: Props) => {
           <Text variant="h5">Nenhuma pergunta encontrada</Text>
         )}
       </Paper>
+
+      {onRestart && (
+        <Button fitContent onClick={onRestart} icon={<RotateCcw />}>
+          Recomeçar Quiz
+        </Button>
+      )}
     </Menu>
   );
 };

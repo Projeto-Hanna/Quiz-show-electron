@@ -12,7 +12,7 @@ export const HowToPlay = () => {
           <Paper
             elevation={3}
             sx={{
-              paddingX: 6,
+              paddingX: { xs: 2, sm: 6 },
               paddingY: 4,
               maxWidth: 720,
             }}
@@ -123,7 +123,7 @@ export const HowToPlay = () => {
           <Paper
             elevation={3}
             sx={{
-              paddingX: 6,
+              paddingX: { xs: 2, sm: 6 },
               paddingY: 4,
               maxWidth: 720,
             }}

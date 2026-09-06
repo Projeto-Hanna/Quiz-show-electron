@@ -56,6 +56,9 @@ Menu.setApplicationMenu(null);
 app.whenReady().then(createWindow);
 
 if (process.platform === 'darwin') {
-  const image = nativeImage.createFromPath('assets/logo.png');
+  const iconPath = app.isPackaged
+    ? join(process.resourcesPath, 'public/logo.png')
+    : join(__dirname, '../../resources/logo.png');
+  const image = nativeImage.createFromPath(iconPath);
   app.dock?.setIcon(image);
 }
