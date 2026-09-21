@@ -1,4 +1,4 @@
-# Quiz Show - Projeto Hanna (Frontend / Desktop)
+# Quiz Show - Frontend / Desktop
 
 Quiz Show desenvolvido e utilizado para o **Projeto Hanna**. Desenvolvido utilizando a stack **Electron** com **Vite** e **React** para fornecer uma interface gráfica servindo tanto para partidas locais quanto multiplayer.
 
