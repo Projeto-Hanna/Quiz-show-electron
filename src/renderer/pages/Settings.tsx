@@ -168,6 +168,47 @@ export const Settings = () => {
               </RadioGroup>
             </FormControl>
           </Paper>
+
+          <Divider color="light" />
+
+          <Paper
+            elevation={3}
+            sx={{
+              paddingX: { xs: 2, sm: 6 },
+              paddingY: 2,
+              maxWidth: 720,
+              width: '100%',
+            }}
+          >
+            <Subtitle>Servidor Multiplayer (Online)</Subtitle>
+            <Text variant="h5">
+              Endereço do servidor dedicado Socket.IO. Se você hospedar o
+              backend na nuvem (ex: Render, Railway, AWS), insira a URL aqui.
+            </Text>
+            <Box mt={2}>
+              <input
+                type="text"
+                defaultValue={localStorage.getItem('quiz_server_url') || ''}
+                placeholder="Padrão: http://localhost:3001"
+                onChange={(e) => {
+                  const val = e.target.value.trim();
+                  if (val) {
+                    localStorage.setItem('quiz_server_url', val);
+                  } else {
+                    localStorage.removeItem('quiz_server_url');
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  fontSize: '1rem',
+                  borderRadius: '6px',
+                  border: '1px solid #ccc',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </Box>
+          </Paper>
         </Menu>
 
         <Link to="/">

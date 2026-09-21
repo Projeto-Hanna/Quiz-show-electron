@@ -8,3 +8,5 @@ export type UserAnswer = {
   questionPosition: number;
   selectedOption: number;
 };
+
+export * from './multiplayer';

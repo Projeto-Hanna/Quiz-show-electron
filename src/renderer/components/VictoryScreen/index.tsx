@@ -48,11 +48,23 @@ export const VictoryScreen = (props: Props) => {
                     <Subtitle textAlign="left">
                       {index + 1}. {question.question}
                     </Subtitle>
-                    <Text color="green" sx={{ fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' }, fontWeight: 'bold' }}>
+                    <Text
+                      color="green"
+                      sx={{
+                        fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' },
+                        fontWeight: 'bold',
+                      }}
+                    >
                       RESPOSTA: {question.options[question.answer]}
                     </Text>
                     {!userIsRight && (
-                      <Text color="red" sx={{ fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' }, fontWeight: 'bold' }}>
+                      <Text
+                        color="red"
+                        sx={{
+                          fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' },
+                          fontWeight: 'bold',
+                        }}
+                      >
                         SUA ESCOLHA: {userAnswerOutput}
                       </Text>
                     )}

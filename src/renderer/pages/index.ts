@@ -3,3 +3,4 @@ export * from './HowToPlay';
 export * from './PlayGame';
 export * from './TestGame';
 export * from './Settings';
+export * from './multiplayer';

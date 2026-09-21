@@ -3,6 +3,7 @@
   "private": true,
   "author": "Projeto Hanna",
   "version": "1.0.0",
+  "description": "Aplicação electron-vite para show de perguntas individual durante atividades do Projeto Hanna",
   "type": "module",
   "main": "./out/main/index.js",
   "scripts": {
@@ -19,7 +20,9 @@
     "make": "npm run build && electron-builder",
     "build:win": "npm run build && electron-builder --win"
   },
-  "dependencies": {},
+  "dependencies": {
+    "socket.io-client": "4.8.3"
+  },
   "devDependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",

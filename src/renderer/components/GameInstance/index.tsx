@@ -92,7 +92,7 @@ export const GameInstance = (props: Props) => {
 
   useEffect(() => {
     if (gamePhase !== 'playing' || isGameFinished) return;
-    
+
     if (questionTimer <= 0) {
       handleTimeout();
       return;
@@ -171,7 +171,8 @@ export const GameInstance = (props: Props) => {
           <Stack spacing={2} alignItems="center">
             <Subtitle>Resumo do Quiz</Subtitle>
             <Typography variant="h5">
-              {questions.length} {questions.length === 1 ? 'pergunta' : 'perguntas'}
+              {questions.length}{' '}
+              {questions.length === 1 ? 'pergunta' : 'perguntas'}
             </Typography>
             <Typography variant="h6" color="text.secondary">
               {timePerQuestionInSeconds}s por pergunta
@@ -179,11 +180,7 @@ export const GameInstance = (props: Props) => {
           </Stack>
         </Paper>
 
-        <Button
-          fitContent
-          onClick={handleStartCountdown}
-          icon={<Play />}
-        >
+        <Button fitContent onClick={handleStartCountdown} icon={<Play />}>
           Começar!
         </Button>
       </Box>
