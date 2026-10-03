@@ -1,4 +1,4 @@
-import { useState, useMemo, type ChangeEvent } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -7,106 +7,52 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Paper,
-  Slider,
   Stack,
-  Typography,
 } from '@mui/material';
-import { pink } from '@mui/material/colors';
-import { ArrowLeft, Play, Upload } from 'lucide-react';
+import { ArrowLeft, Play } from 'lucide-react';
 
-import { Button, Divider, Menu, Subtitle, Text, Title } from '../../components';
+import {
+  Button,
+  Divider,
+  Menu,
+  Subtitle,
+  Text,
+  Title,
+  QuestionSourceSelector,
+  TimePerQuestionSelector,
+} from '../../components';
 import { getSocket } from '../../services/socket';
 import type { Question } from '../../types';
+import { DEFAULT_QUESTIONS } from '../../utils/defaultQuestions';
 
-const DEFAULT_QUESTIONS: Question[] = [
-  {
-    question: 'Quem é a principal personagem do Projeto Hanna?',
-    options: ['Hanna', 'Byte', 'Monika', 'Projeto'],
-    answer: 0,
-  },
-  {
-    question: 'Como se parece um código binário?',
-    options: ['#fefefe', 'ABCDEFG', '010111'],
-    answer: 2,
-  },
-  {
-    question: 'Qual das seguintes peças não faz parte de um computador?',
-    options: [
-      'Fonte de energia',
-      'Processador',
-      'Memória RAM',
-      'Sanduíche de picles',
-      'Placa-mãe',
-    ],
-    answer: 3,
-  },
-  {
-    question: 'O que significa a sigla CPU?',
-    options: [
-      'Central Processing Unit',
-      'Computer Power Universal',
-      'Control Program User',
-      'Central Performance Utility',
-    ],
-    answer: 0,
-  },
-  {
-    question:
-      'Qual linguagem é tipicamente executada nativamente em navegadores web?',
-    options: ['Python', 'C++', 'JavaScript', 'Cobol'],
-    answer: 2,
-  },
-];
+import { useSettings } from '../../context/useSettings';
 
 export const HostCreate = () => {
   const navigate = useNavigate();
+  const { settings } = useSettings();
   const [questions, setQuestions] = useState<Question[]>(DEFAULT_QUESTIONS);
-  const [questionSource, setQuestionSource] = useState<'default' | 'custom'>(
-    'default',
+  const [timePerQuestion, setTimePerQuestion] = useState<number>(
+    settings.timePerQuestionInSeconds,
   );
-  const [timePerQuestion, setTimePerQuestion] = useState<number>(15);
   const [isCreating, setIsCreating] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState<string>('');
 
-  const handleTimeChange = (_: Event, value: number | number[]) => {
-    const next =
-      typeof value === 'number' ? value : Array.isArray(value) ? value[0] : 15;
-    const clamped = Math.min(300, Math.max(10, Math.round(next)));
-    setTimePerQuestion(clamped);
+  const isAbortedRef = useRef(false);
+  const createTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleQuestionsLoaded = (loadedQuestions: Question[]) => {
+    setQuestions(loadedQuestions);
+    setErrorMessage('');
   };
 
-  const readableQuestionTime = useMemo(() => {
-    const minutes = Math.trunc(timePerQuestion / 60);
-    const seconds = timePerQuestion % 60;
-
-    if (minutes > 0 && seconds > 0)
-      return `${minutes} minuto(s) e ${seconds} segundo(s)`;
-    if (minutes > 0) return `${minutes} minuto(s)`;
-    return `${seconds} segundo(s)`;
-  }, [timePerQuestion]);
-
-  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
-
-    try {
-      const raw = await file.text();
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed) || parsed.length === 0) {
-        throw new Error(
-          'O arquivo deve conter um array JSON com ao menos 1 pergunta.',
-        );
-      }
-      setQuestions(parsed);
-      setQuestionSource('custom');
-      setErrorMessage('');
-    } catch (err) {
-      setErrorMessage(
-        err instanceof Error ? err.message : 'Erro ao ler arquivo JSON.',
-      );
+  const handleCancelCreate = () => {
+    isAbortedRef.current = true;
+    if (createTimeoutRef.current) {
+      clearTimeout(createTimeoutRef.current);
+      createTimeoutRef.current = null;
     }
+    setIsCreating(false);
   };
 
   const handleCreateRoom = () => {
@@ -115,18 +61,24 @@ export const HostCreate = () => {
       return;
     }
 
+    isAbortedRef.current = false;
     setIsCreating(true);
     const socket = getSocket();
     if (!socket.connected) {
       socket.connect();
     }
 
-    const timeout = setTimeout(() => {
+    if (createTimeoutRef.current) {
+      clearTimeout(createTimeoutRef.current);
+    }
+
+    createTimeoutRef.current = setTimeout(() => {
+      isAbortedRef.current = true;
       setIsCreating(false);
       setErrorMessage(
-        'O servidor demorou muito para responder. Verifique sua conexão e tente novamente.',
+        'O servidor demorou muito para responder (tempo limite de 15 segundos excedido). Verifique sua conexão e tente novamente.',
       );
-    }, 12000);
+    }, 15000);
 
     socket.emit(
       'host:create_room',
@@ -137,7 +89,15 @@ export const HostCreate = () => {
         hostToken?: string;
         error?: string;
       }) => {
-        clearTimeout(timeout);
+        // Se a criação foi cancelada manualmente ou deu timeout, descarta a resposta
+        if (isAbortedRef.current) {
+          return;
+        }
+
+        if (createTimeoutRef.current) {
+          clearTimeout(createTimeoutRef.current);
+          createTimeoutRef.current = null;
+        }
         setIsCreating(false);
         if (response.success && response.roomId) {
           if (response.hostToken) {
@@ -158,6 +118,7 @@ export const HostCreate = () => {
       <main>
         <Dialog
           open={isCreating}
+          onClose={handleCancelCreate}
           aria-labelledby="creating-room-dialog-title"
           maxWidth="xs"
           fullWidth
@@ -177,17 +138,18 @@ export const HostCreate = () => {
               thickness={4.5}
               sx={{ color: '#ff0a69' }}
             />
-            <Typography
-              id="creating-room-dialog-title"
-              variant="h5"
-              fontWeight="bold"
-            >
+            <Subtitle id="creating-room-dialog-title" textAlign="center">
               Criando Sala Multiplayer...
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
+            </Subtitle>
+            <Text variant="h5" color="text.secondary" textAlign="center">
               Conectando ao servidor e gerando o código de convite da sala. Por
               favor, aguarde alguns instantes...
-            </Typography>
+            </Text>
+            <Box pt={1}>
+              <Button size="small" fitContent onClick={handleCancelCreate}>
+                Cancelar
+              </Button>
+            </Box>
           </Stack>
         </Dialog>
 
@@ -212,6 +174,36 @@ export const HostCreate = () => {
           </DialogActions>
         </Dialog>
 
+        <Dialog
+          open={Boolean(successMessage)}
+          onClose={() => setSuccessMessage('')}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>
+            <Text
+              fontWeight="bold"
+              textTransform="uppercase"
+              variant="h5"
+              color="#4caf50"
+            >
+              Sucesso
+            </Text>
+          </DialogTitle>
+          <DialogContent dividers>
+            <Text>{successMessage}</Text>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              size="small"
+              fitContent
+              onClick={() => setSuccessMessage('')}
+            >
+              Fechar
+            </Button>
+          </DialogActions>
+        </Dialog>
+
         <Menu direction="column">
           <Stack spacing={3} sx={{ width: 'min(900px, 90vw)' }}>
             <Title variant="h3">Criar Sala Multiplayer (Host)</Title>
@@ -220,124 +212,36 @@ export const HostCreate = () => {
               conectar pelo código de convite!
             </Text>
 
-            <Paper
-              elevation={4}
-              sx={{ p: { xs: 2.5, sm: 4 }, borderRadius: 2 }}
-            >
-              <Stack spacing={3}>
-                <Subtitle>1. Pacote de Perguntas</Subtitle>
-                <Typography variant="body1" color="text.secondary">
-                  {questionSource === 'default'
-                    ? `Perguntas Padrão selecionadas (${questions.length} perguntas).`
-                    : `Arquivo personalizado carregado (${questions.length} perguntas).`}
-                </Typography>
+            <QuestionSourceSelector
+              onQuestionsLoaded={handleQuestionsLoaded}
+              onError={setErrorMessage}
+              onSuccess={setSuccessMessage}
+            />
 
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                  <Button
-                    size="small"
-                    fitContent
-                    disabled={isCreating}
-                    onClick={() => {
-                      setQuestions(DEFAULT_QUESTIONS);
-                      setQuestionSource('default');
-                    }}
-                  >
-                    Usar Perguntas Padrão (5)
-                  </Button>
+            <Divider color="light" />
 
-                  <Box>
-                    <input
-                      type="file"
-                      id="json-questions-upload"
-                      accept="application/json,.json"
-                      style={{ display: 'none' }}
-                      onChange={handleFileChange}
-                    />
-                    <label htmlFor="json-questions-upload">
-                      <Button
-                        size="small"
-                        fitContent
-                        disabled={isCreating}
-                        icon={<Upload size={18} />}
-                        onClick={() => {
-                          document
-                            .getElementById('json-questions-upload')
-                            ?.click();
-                        }}
-                      >
-                        Carregar arquivo JSON
-                      </Button>
-                    </label>
-                  </Box>
-                </Stack>
+            <TimePerQuestionSelector
+              value={timePerQuestion}
+              onChange={setTimePerQuestion}
+              disabled={isCreating}
+            />
 
-                <Divider color="light" />
-
-                <Subtitle>2. Tempo por Pergunta</Subtitle>
-                <Box display="flex" flexDirection="column" gap="10px">
-                  <Text variant="body1" color="text.secondary">
-                    Defina o tempo limite que cada jogador terá para responder
-                    uma pergunta.
-                  </Text>
-                  <Text variant="body1" fontWeight="bold">
-                    Tempo selecionado: {readableQuestionTime}.
-                  </Text>
-                </Box>
-
-                <Slider
-                  value={timePerQuestion}
-                  onChange={handleTimeChange}
-                  disabled={isCreating}
-                  min={10}
-                  max={300}
-                  step={10}
-                  sx={{
-                    color: pink[500],
-                    '& .MuiSlider-rail': {
-                      opacity: 0.35,
-                    },
-                    '& .MuiSlider-track': {
-                      backgroundColor: pink[500],
-                    },
-                    '& .MuiSlider-thumb': {
-                      backgroundColor: pink[500],
-                    },
-                    '& .MuiSlider-valueLabel': {
-                      backgroundColor: pink[700],
-                    },
-                  }}
-                  marks={[
-                    { value: 10, label: '10s' },
-                    { value: 30, label: '30s' },
-                    { value: 60, label: '1m' },
-                    { value: 120, label: '2m' },
-                    { value: 180, label: '3m' },
-                    { value: 240, label: '4m' },
-                    { value: 300, label: '5m' },
-                  ]}
-                />
-
-                <Divider color="light" />
-
-                <Box display="flex" justifyContent="center" pt={1}>
-                  <Button
-                    icon={
-                      isCreating ? (
-                        <CircularProgress size={22} sx={{ color: 'white' }} />
-                      ) : (
-                        <Play size={22} />
-                      )
-                    }
-                    onClick={handleCreateRoom}
-                    disabled={isCreating}
-                  >
-                    {isCreating
-                      ? 'Criando Sala...'
-                      : 'Gerar Sala e Código de Convite'}
-                  </Button>
-                </Box>
-              </Stack>
-            </Paper>
+            <Box display="flex" justifyContent="center" pt={1}>
+              <Button
+                icon={
+                  isCreating ? (
+                    <CircularProgress size={22} sx={{ color: 'white' }} />
+                  ) : (
+                    <Play size={22} />
+                  )
+                }
+                onClick={handleCreateRoom}
+                disabled={isCreating}
+                inverted
+              >
+                {isCreating ? 'Criando Sala...' : 'Gerar Sala'}
+              </Button>
+            </Box>
           </Stack>
         </Menu>
 

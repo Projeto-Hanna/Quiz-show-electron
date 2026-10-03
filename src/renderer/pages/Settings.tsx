@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import {
   Box,
   FormControl,
@@ -6,27 +5,33 @@ import {
   Paper,
   Radio,
   RadioGroup,
-  Slider,
 } from '@mui/material';
 import { pink } from '@mui/material/colors';
 import { Link } from 'react-router-dom';
 
-import { Button, Divider, Menu, Subtitle, Title, Text } from '../components';
+import {
+  Button,
+  Divider,
+  Menu,
+  Subtitle,
+  Title,
+  Text,
+  TimePerQuestionSelector,
+} from '../components';
 import { useSettings } from '../context/useSettings';
 
 export const Settings = () => {
   const {
-    settings: { timePerQuestionInSeconds, unansweredQuestionBehavior },
+    settings: {
+      timePerQuestionInSeconds,
+      unansweredQuestionBehavior,
+      multiplayerAllAnsweredBehavior,
+    },
     updateSettings,
   } = useSettings();
 
-  const handleTimeChange = (_: Event, value: number | number[]) => {
-    const next =
-      typeof value === 'number' ? value : Array.isArray(value) ? value[0] : 15;
-
-    const clamped = Math.min(300, Math.max(10, Math.round(next)));
-
-    updateSettings({ timePerQuestionInSeconds: clamped });
+  const handleTimeChange = (value: number) => {
+    updateSettings({ timePerQuestionInSeconds: value });
   };
 
   const handleUnansweredBehaviorChange = (
@@ -37,71 +42,24 @@ export const Settings = () => {
     updateSettings({ unansweredQuestionBehavior: value });
   };
 
-  const readableQuestionTime = useMemo(() => {
-    const minutes = Math.trunc(timePerQuestionInSeconds / 60);
-    const seconds = timePerQuestionInSeconds % 60;
+  const handleMultiplayerAllAnsweredChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const value = event.target.value as 'next-question' | 'wait-timer';
 
-    return `${minutes} minuto(s) e ${seconds} segundo(s)`;
-  }, [timePerQuestionInSeconds]);
+    updateSettings({ multiplayerAllAnsweredBehavior: value });
+  };
 
   return (
     <>
       <main>
-        <Menu direction="column" gap="30px">
+        <Menu direction="column" gap="30px" sx={{ maxWidth: '800px' }}>
           <Title>Configurações</Title>
 
-          <Paper
-            elevation={3}
-            sx={{
-              paddingX: { xs: 2, sm: 6 },
-              paddingY: 2,
-              maxWidth: 720,
-            }}
-          >
-            <Subtitle>Tempo por pergunta</Subtitle>
-            <Box display="flex" flexDirection="column" gap="10px">
-              <Text variant="h5">
-                Defina o tempo limite (em segundos) que cada jogador terá para
-                responder uma pergunta.
-              </Text>
-              <Text variant="h5" fontWeight="bold" color="black">
-                Tempo atual: {readableQuestionTime}.
-              </Text>
-            </Box>
-
-            <Slider
-              value={timePerQuestionInSeconds}
-              onChange={handleTimeChange}
-              min={10}
-              max={300}
-              step={10}
-              sx={{
-                color: pink[500],
-                '& .MuiSlider-rail': {
-                  opacity: 0.35,
-                },
-                '& .MuiSlider-track': {
-                  backgroundColor: pink[500],
-                },
-                '& .MuiSlider-thumb': {
-                  backgroundColor: pink[500],
-                },
-                '& .MuiSlider-valueLabel': {
-                  backgroundColor: pink[700],
-                },
-              }}
-              marks={[
-                { value: 10, label: '10s' },
-                { value: 30, label: '30s' },
-                { value: 60, label: '1m' },
-                { value: 120, label: '2m' },
-                { value: 180, label: '3m' },
-                { value: 240, label: '4m' },
-                { value: 300, label: '5m' },
-              ]}
-              valueLabelDisplay="auto"
-            />
-          </Paper>
+          <TimePerQuestionSelector
+            value={timePerQuestionInSeconds}
+            onChange={handleTimeChange}
+          />
 
           <Divider color="light" />
 
@@ -110,11 +68,10 @@ export const Settings = () => {
             sx={{
               paddingX: { xs: 2, sm: 6 },
               paddingY: 2,
-              maxWidth: 720,
             }}
           >
-            <Subtitle>Comportamento</Subtitle>
-            <Text variant="h5">
+            <Subtitle>Comportamento (Singleplayer)</Subtitle>
+            <Text variant="h5" color="text.secondary">
               Escolha o que deve acontecer quando o tempo acabar e ninguém
               responder à pergunta.
             </Text>
@@ -176,11 +133,75 @@ export const Settings = () => {
             sx={{
               paddingX: { xs: 2, sm: 6 },
               paddingY: 2,
-              maxWidth: 720,
             }}
           >
-            <Subtitle>Servidor Multiplayer (Online)</Subtitle>
-            <Text variant="h5">
+            <Subtitle>Todos Responderam (Multiplayer)</Subtitle>
+            <Text variant="h5" color="text.secondary">
+              Escolha o que deve acontecer quando todos os jogadores responderem
+              à pergunta antes do tempo da rodada terminar.
+            </Text>
+
+            <FormControl>
+              <RadioGroup
+                name="multiplayer-all-answered-behavior"
+                value={multiplayerAllAnsweredBehavior}
+                onChange={handleMultiplayerAllAnsweredChange}
+                sx={{
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  gap: { xs: 1, sm: 2, md: 4, lg: 4 },
+                }}
+              >
+                <FormControlLabel
+                  value="wait-timer"
+                  control={
+                    <Radio
+                      sx={{
+                        color: pink[500],
+                        '&.Mui-checked': {
+                          color: pink[500],
+                        },
+                      }}
+                    />
+                  }
+                  label={
+                    <Text variant="h6" color="black" fontWeight="regular">
+                      Aguardar o tempo acabar
+                    </Text>
+                  }
+                />
+                <FormControlLabel
+                  value="next-question"
+                  control={
+                    <Radio
+                      sx={{
+                        color: pink[500],
+                        '&.Mui-checked': {
+                          color: pink[500],
+                        },
+                      }}
+                    />
+                  }
+                  label={
+                    <Text variant="h6" color="black" fontWeight="regular">
+                      Pular para a próxima pergunta
+                    </Text>
+                  }
+                />
+              </RadioGroup>
+            </FormControl>
+          </Paper>
+
+          <Divider color="light" />
+
+          <Paper
+            elevation={3}
+            sx={{
+              paddingX: { xs: 2, sm: 6 },
+              paddingY: 2,
+            }}
+          >
+            <Subtitle>Servidor (Multiplayer)</Subtitle>
+            <Text variant="h5" color="text.secondary">
               Endereço do servidor dedicado Socket.IO. Se você hospedar o
               backend na nuvem (ex: Render, Railway, AWS), insira a URL aqui.
             </Text>

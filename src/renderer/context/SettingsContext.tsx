@@ -14,6 +14,7 @@ import {
 const DEFAULT_SETTINGS: Settings = {
   timePerQuestionInSeconds: 30,
   unansweredQuestionBehavior: 'next-question',
+  multiplayerAllAnsweredBehavior: 'wait-timer',
 };
 
 const STORAGE_KEY = 'quiz-show-settings';
@@ -39,6 +40,9 @@ export const SettingsProvider = ({ children }: Props) => {
           unansweredQuestionBehavior:
             parsed.unansweredQuestionBehavior ??
             DEFAULT_SETTINGS.unansweredQuestionBehavior,
+          multiplayerAllAnsweredBehavior:
+            parsed.multiplayerAllAnsweredBehavior ??
+            DEFAULT_SETTINGS.multiplayerAllAnsweredBehavior,
         };
       }
 

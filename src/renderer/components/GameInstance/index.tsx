@@ -18,6 +18,7 @@ import { Title } from '../Title';
 
 type Props = {
   questions: Question[];
+  timePerQuestionInSeconds?: number;
 };
 
 type GamePhase = 'waiting' | 'countdown' | 'playing';
@@ -32,10 +33,15 @@ const getOptionLetter = (index: number): string => {
 };
 
 export const GameInstance = (props: Props) => {
-  const { questions } = props;
+  const { questions, timePerQuestionInSeconds: customTime } = props;
   const {
-    settings: { timePerQuestionInSeconds, unansweredQuestionBehavior },
+    settings: {
+      timePerQuestionInSeconds: settingsTime,
+      unansweredQuestionBehavior,
+    },
   } = useSettings();
+
+  const timePerQuestionInSeconds = customTime ?? settingsTime;
 
   const [gamePhase, setGamePhase] = useState<GamePhase>('waiting');
   const [countdownValue, setCountdownValue] = useState<number>(COUNTDOWN_START);
@@ -56,8 +62,8 @@ export const GameInstance = (props: Props) => {
     if (gamePhase !== 'countdown') return;
 
     if (countdownValue <= 0) {
-      setGamePhase('playing');
-      return;
+      const timeoutId = setTimeout(() => setGamePhase('playing'), 0);
+      return () => clearTimeout(timeoutId);
     }
 
     const timerId = setTimeout(() => {
@@ -101,8 +107,8 @@ export const GameInstance = (props: Props) => {
     if (gamePhase !== 'playing' || isGameFinished) return;
 
     if (questionTimer <= 0) {
-      handleTimeout();
-      return;
+      const timeoutId = setTimeout(() => handleTimeout(), 0);
+      return () => clearTimeout(timeoutId);
     }
 
     const timerId = setInterval(() => {
@@ -184,12 +190,12 @@ export const GameInstance = (props: Props) => {
             <Typography variant="h6" color="text.secondary">
               {timePerQuestionInSeconds}s por pergunta
             </Typography>
+
+            <Button fitContent onClick={handleStartCountdown} icon={<Play />}>
+              Começar!
+            </Button>
           </Stack>
         </Paper>
-
-        <Button fitContent onClick={handleStartCountdown} icon={<Play />}>
-          Começar!
-        </Button>
       </Box>
     );
   }

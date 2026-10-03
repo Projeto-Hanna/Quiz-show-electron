@@ -201,6 +201,7 @@ export const PlayerJoin = () => {
                       disabled={
                         isLoading || !roomId.trim() || !playerName.trim()
                       }
+                      inverted
                     >
                       {isLoading ? 'Entrando...' : 'Entrar no Quiz'}
                     </Button>

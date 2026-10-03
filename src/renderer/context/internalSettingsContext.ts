@@ -3,6 +3,7 @@ import { createContext } from 'react';
 export type Settings = {
   timePerQuestionInSeconds: number;
   unansweredQuestionBehavior: 'next-question' | 'victory-screen';
+  multiplayerAllAnsweredBehavior: 'next-question' | 'wait-timer';
 };
 
 export type SettingsContextValue = {

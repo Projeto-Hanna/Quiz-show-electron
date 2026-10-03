@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Avatar,
@@ -28,7 +28,6 @@ import {
   Copy,
   Play,
   SkipForward,
-  Square,
   Trophy,
   Users,
   XCircle,
@@ -36,6 +35,7 @@ import {
 
 import { Button, Subtitle, Text, Title } from '../../components';
 import { getSocket } from '../../services/socket';
+import { useSettings } from '../../context/useSettings';
 import type {
   LobbySummary,
   MultiplayerPlayer,
@@ -73,6 +73,17 @@ export const HostDashboard = () => {
   const [scoreboard, setScoreboard] = useState<ScoreboardEntry[]>([]);
   const [copiedNotification, setCopiedNotification] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  const { settings } = useSettings();
+  const allAnsweredBehaviorRef = useRef(
+    settings.multiplayerAllAnsweredBehavior,
+  );
+
+  useEffect(() => {
+    allAnsweredBehaviorRef.current = settings.multiplayerAllAnsweredBehavior;
+  }, [settings.multiplayerAllAnsweredBehavior]);
+
+  const hasEndedRoundRef = useRef(false);
 
   useEffect(() => {
     if (!roomId) return;
@@ -146,6 +157,7 @@ export const HostDashboard = () => {
       setCurrentQuestion(data.question);
       setAnsweredCount(0);
       setRemainingTime(data.question.timeLimit || 15);
+      hasEndedRoundRef.current = false;
       setPhase('QUESTION');
     };
 
@@ -155,6 +167,17 @@ export const HostDashboard = () => {
       allAnswered: boolean;
     }) => {
       setAnsweredCount(data.totalAnswered);
+
+      if (
+        data.allAnswered &&
+        allAnsweredBehaviorRef.current === 'next-question' &&
+        !hasEndedRoundRef.current
+      ) {
+        hasEndedRoundRef.current = true;
+        const socket = getSocket();
+        const hostToken = sessionStorage.getItem('quiz_host_token');
+        socket.emit('host:end_round', { roomId, hostToken });
+      }
     };
 
     const handleRoundResult = (data: RoundResult) => {
@@ -216,10 +239,13 @@ export const HostDashboard = () => {
       setRemainingTime((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          // Automatically trigger end round when time expires
-          const socket = getSocket();
-          const hostToken = sessionStorage.getItem('quiz_host_token');
-          socket.emit('host:end_round', { roomId, hostToken });
+          if (!hasEndedRoundRef.current) {
+            hasEndedRoundRef.current = true;
+            // Automatically trigger end round when time expires
+            const socket = getSocket();
+            const hostToken = sessionStorage.getItem('quiz_host_token');
+            socket.emit('host:end_round', { roomId, hostToken });
+          }
           return 0;
         }
         return prev - 1;
@@ -259,6 +285,7 @@ export const HostDashboard = () => {
   };
 
   const handleEndRoundNow = () => {
+    hasEndedRoundRef.current = true;
     const socket = getSocket();
     const hostToken = sessionStorage.getItem('quiz_host_token');
     socket.emit('host:end_round', { roomId, hostToken });
@@ -435,6 +462,7 @@ export const HostDashboard = () => {
                   icon={<Play size={24} />}
                   onClick={handleStartGame}
                   disabled={players.length === 0}
+                  inverted
                 >
                   {`Iniciar Partida com ${players.length} ${players.length === 1 ? 'Jogador' : 'Jogadores'}`}
                 </Button>
@@ -445,7 +473,7 @@ export const HostDashboard = () => {
                   fitContent
                   size="small"
                 >
-                  Cancelar Sala e Voltar ao Menu
+                  Cancelar Sala
                 </Button>
               </Box>
             </Stack>
@@ -638,10 +666,10 @@ export const HostDashboard = () => {
             <Button
               fitContent
               size="small"
-              icon={<Square size={18} />}
               onClick={handleEndRoundNow}
+              inverted
             >
-              Encerrar Tempo Agora
+              Encerrar Tempo
             </Button>
           </Box>
         </Box>
@@ -716,6 +744,7 @@ export const HostDashboard = () => {
                 fitContent
                 icon={<SkipForward size={20} />}
                 onClick={handleNextQuestion}
+                inverted
               >
                 {roundResult.hasMoreQuestions
                   ? 'Próxima Pergunta'
@@ -807,8 +836,9 @@ export const HostDashboard = () => {
                 fitContent
                 icon={<SkipForward size={20} />}
                 onClick={handleNextQuestion}
+                inverted
               >
-                Avançar para Próxima Pergunta
+                Próxima Pergunta
               </Button>
               <Button fitContent size="small" onClick={handleEndGameEarly}>
                 Encerrar Partida

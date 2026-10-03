@@ -39,7 +39,9 @@ export const Home = () => {
                 <Button icon={<PlayArrowIcon />}>Partida teste</Button>
               </Link>
               <Link to="/play">
-                <Button icon={<EditSquareIcon />}>Partida personalizada</Button>
+                <Button icon={<EditSquareIcon />} inverted>
+                  Partida personalizada
+                </Button>
               </Link>
               <Link to="/multiplayer">
                 <Button icon={<GroupsIcon />}>Multiplayer</Button>

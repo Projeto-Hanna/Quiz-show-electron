@@ -45,6 +45,8 @@ type Props = {
   onClick?: () => void;
   icon?: ReactElement;
   size?: 'small' | 'medium' | 'large';
+  variant?: 'regular' | 'inverted';
+  inverted?: boolean;
   fitContent?: boolean;
   disabled?: boolean;
   selected?: boolean;
@@ -57,6 +59,8 @@ export const Button = ({
   onClick,
   icon,
   size = 'large',
+  variant = 'regular',
+  inverted = false,
   fitContent = false,
   disabled = false,
   selected = false,
@@ -64,6 +68,27 @@ export const Button = ({
   sx: customSx,
 }: Props) => {
   const sizeSx = size === 'small' ? smallButtonSx : largeButtonSx;
+  const isInverted = variant === 'inverted' || inverted;
+
+  const invertedSx: SxProps<Theme> = isInverted
+    ? {
+        color: 'white',
+        backgroundImage:
+          'linear-gradient(135deg,#e42c2c, #ff0a69, #51bddf, #afe1f1)',
+        backgroundColor: 'transparent',
+        '&:hover': {
+          color: pink[500],
+          backgroundColor: 'white',
+          backgroundImage: 'none',
+        },
+        '&.Mui-disabled': {
+          opacity: 0.6,
+          color: 'white',
+          backgroundImage:
+            'linear-gradient(135deg,#e42c2c, #ff0a69, #51bddf, #afe1f1)',
+        },
+      }
+    : {};
 
   const stateSx: SxProps<Theme> = {
     ...(selected && {
@@ -113,6 +138,7 @@ export const Button = ({
           : {
               width: '100%',
             }),
+        ...invertedSx,
         ...stateSx,
         ...customSx,
       }}
