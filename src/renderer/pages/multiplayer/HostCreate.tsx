@@ -2,6 +2,7 @@ import { useState, useMemo, type ChangeEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Box,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -12,9 +13,7 @@ import {
   Typography,
 } from '@mui/material';
 import { pink } from '@mui/material/colors';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { ArrowLeft, Play, Upload } from 'lucide-react';
 
 import { Button, Divider, Menu, Subtitle, Text, Title } from '../../components';
 import { getSocket } from '../../services/socket';
@@ -80,8 +79,9 @@ export const HostCreate = () => {
   const readableQuestionTime = useMemo(() => {
     const minutes = Math.trunc(timePerQuestion / 60);
     const seconds = timePerQuestion % 60;
-    
-    if (minutes > 0 && seconds > 0) return `${minutes} minuto(s) e ${seconds} segundo(s)`;
+
+    if (minutes > 0 && seconds > 0)
+      return `${minutes} minuto(s) e ${seconds} segundo(s)`;
     if (minutes > 0) return `${minutes} minuto(s)`;
     return `${seconds} segundo(s)`;
   }, [timePerQuestion]);
@@ -117,11 +117,27 @@ export const HostCreate = () => {
 
     setIsCreating(true);
     const socket = getSocket();
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    const timeout = setTimeout(() => {
+      setIsCreating(false);
+      setErrorMessage(
+        'O servidor demorou muito para responder. Verifique sua conexão e tente novamente.',
+      );
+    }, 12000);
 
     socket.emit(
       'host:create_room',
       { questions, timePerQuestion },
-      (response: { success: boolean; roomId?: string; hostToken?: string; error?: string }) => {
+      (response: {
+        success: boolean;
+        roomId?: string;
+        hostToken?: string;
+        error?: string;
+      }) => {
+        clearTimeout(timeout);
         setIsCreating(false);
         if (response.success && response.roomId) {
           if (response.hostToken) {
@@ -140,6 +156,41 @@ export const HostCreate = () => {
   return (
     <>
       <main>
+        <Dialog
+          open={isCreating}
+          aria-labelledby="creating-room-dialog-title"
+          maxWidth="xs"
+          fullWidth
+          slotProps={{
+            paper: {
+              sx: {
+                p: { xs: 3, sm: 4 },
+                textAlign: 'center',
+                borderRadius: 3,
+              },
+            },
+          }}
+        >
+          <Stack spacing={2.5} alignItems="center" py={1}>
+            <CircularProgress
+              size={56}
+              thickness={4.5}
+              sx={{ color: '#ff0a69' }}
+            />
+            <Typography
+              id="creating-room-dialog-title"
+              variant="h5"
+              fontWeight="bold"
+            >
+              Criando Sala Multiplayer...
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Conectando ao servidor e gerando o código de convite da sala. Por
+              favor, aguarde alguns instantes...
+            </Typography>
+          </Stack>
+        </Dialog>
+
         <Dialog
           open={Boolean(errorMessage)}
           onClose={() => setErrorMessage('')}
@@ -185,6 +236,7 @@ export const HostCreate = () => {
                   <Button
                     size="small"
                     fitContent
+                    disabled={isCreating}
                     onClick={() => {
                       setQuestions(DEFAULT_QUESTIONS);
                       setQuestionSource('default');
@@ -205,7 +257,8 @@ export const HostCreate = () => {
                       <Button
                         size="small"
                         fitContent
-                        icon={<UploadFileIcon />}
+                        disabled={isCreating}
+                        icon={<Upload size={18} />}
                         onClick={() => {
                           document
                             .getElementById('json-questions-upload')
@@ -223,7 +276,8 @@ export const HostCreate = () => {
                 <Subtitle>2. Tempo por Pergunta</Subtitle>
                 <Box display="flex" flexDirection="column" gap="10px">
                   <Text variant="body1" color="text.secondary">
-                    Defina o tempo limite que cada jogador terá para responder uma pergunta.
+                    Defina o tempo limite que cada jogador terá para responder
+                    uma pergunta.
                   </Text>
                   <Text variant="body1" fontWeight="bold">
                     Tempo selecionado: {readableQuestionTime}.
@@ -233,6 +287,7 @@ export const HostCreate = () => {
                 <Slider
                   value={timePerQuestion}
                   onChange={handleTimeChange}
+                  disabled={isCreating}
                   min={10}
                   max={300}
                   step={10}
@@ -266,7 +321,13 @@ export const HostCreate = () => {
 
                 <Box display="flex" justifyContent="center" pt={1}>
                   <Button
-                    icon={<PlayArrowIcon />}
+                    icon={
+                      isCreating ? (
+                        <CircularProgress size={22} sx={{ color: 'white' }} />
+                      ) : (
+                        <Play size={22} />
+                      )
+                    }
                     onClick={handleCreateRoom}
                     disabled={isCreating}
                   >
@@ -281,7 +342,11 @@ export const HostCreate = () => {
         </Menu>
 
         <Link to="/multiplayer">
-          <Button fitContent icon={<ArrowBackIcon />}>
+          <Button
+            fitContent
+            disabled={isCreating}
+            icon={<ArrowLeft size={18} />}
+          >
             Voltar
           </Button>
         </Link>

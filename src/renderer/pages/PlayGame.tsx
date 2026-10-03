@@ -24,6 +24,7 @@ import {
 } from '../components';
 import type { Question } from '../types';
 import { pink } from '@mui/material/colors';
+import { Upload } from 'lucide-react';
 
 type EditableQuestion = {
   question: string;
@@ -297,9 +298,25 @@ export const PlayGame = () => {
                 <Box>
                   <input
                     type="file"
+                    id="playgame-json-questions-upload"
                     accept="application/json,.json"
+                    style={{ display: 'none' }}
                     onChange={handleFileChange}
                   />
+                  <label htmlFor="playgame-json-questions-upload">
+                    <Button
+                      size="small"
+                      fitContent
+                      icon={<Upload size={18} />}
+                      onClick={() => {
+                        document
+                          .getElementById('playgame-json-questions-upload')
+                          ?.click();
+                      }}
+                    >
+                      Carregar arquivo JSON
+                    </Button>
+                  </label>
                 </Box>
                 <Text variant="body2" fontWeight="bold">
                   * question: string, options: string[], answer: number (posição

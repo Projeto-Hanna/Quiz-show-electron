@@ -1,5 +1,10 @@
 import { type ReactElement } from 'react';
-import { Button as MUIButton, type ButtonProps } from '@mui/material';
+import {
+  Button as MUIButton,
+  type ButtonProps,
+  type SxProps,
+  type Theme,
+} from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { pink } from '@mui/material/colors';
 
@@ -42,6 +47,9 @@ type Props = {
   size?: 'small' | 'medium' | 'large';
   fitContent?: boolean;
   disabled?: boolean;
+  selected?: boolean;
+  isCorrect?: boolean;
+  sx?: SxProps<Theme>;
 };
 
 export const Button = ({
@@ -51,19 +59,53 @@ export const Button = ({
   size = 'large',
   fitContent = false,
   disabled = false,
+  selected = false,
+  isCorrect = false,
+  sx: customSx,
 }: Props) => {
-  const sx = (() => {
-    if (size === 'small') {
-      return smallButtonSx;
-    }
+  const sizeSx = size === 'small' ? smallButtonSx : largeButtonSx;
 
-    return largeButtonSx;
-  })();
+  const stateSx: SxProps<Theme> = {
+    ...(selected && {
+      backgroundColor: '#ff0a69',
+      color: 'white',
+      borderImage: 'none',
+      border: '4px solid #ff0a69',
+      boxShadow: '0 4px 14px rgba(255, 10, 105, 0.45)',
+      '&:hover': {
+        backgroundColor: '#e0005a',
+        color: 'white',
+        backgroundImage: 'none',
+      },
+      '&.Mui-disabled': {
+        backgroundColor: '#ff0a69',
+        color: 'white',
+        opacity: 0.9,
+      },
+    }),
+    ...(isCorrect && {
+      backgroundColor: '#2e7d32',
+      color: 'white',
+      borderImage: 'none',
+      border: '4px solid #1b5e20',
+      boxShadow: '0 4px 14px rgba(46, 125, 50, 0.45)',
+      '&:hover': {
+        backgroundColor: '#1b5e20',
+        color: 'white',
+        backgroundImage: 'none',
+      },
+      '&.Mui-disabled': {
+        backgroundColor: '#2e7d32',
+        color: 'white',
+        opacity: 0.95,
+      },
+    }),
+  };
 
   return (
     <StyledButton
       sx={{
-        ...sx,
+        ...sizeSx,
         ...(fitContent
           ? {
               width: 'fit-content',
@@ -71,6 +113,8 @@ export const Button = ({
           : {
               width: '100%',
             }),
+        ...stateSx,
+        ...customSx,
       }}
       variant="contained"
       size={size}

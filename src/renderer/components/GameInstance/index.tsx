@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlarmClock, Play, Trophy } from 'lucide-react';
-import { Box, Grid, Paper, Stack, Typography } from '@mui/material';
+import {
+  Box,
+  Grid,
+  LinearProgress,
+  Paper,
+  Stack,
+  Typography,
+} from '@mui/material';
 
 import type { Question, UserAnswer } from '../../types';
 import { VictoryScreen } from '../VictoryScreen';
@@ -253,10 +260,36 @@ export const GameInstance = (props: Props) => {
           </Stack>
         </Paper>
 
-        <Paper elevation={3} sx={{ padding: 2 }}>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <AlarmClock size={32} />
-            <Subtitle>{questionTimer} segundos restantes</Subtitle>
+        <Paper
+          elevation={3}
+          sx={{ padding: 2, minWidth: { xs: '100%', sm: 280 } }}
+        >
+          <Stack spacing={1}>
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              justifyContent="center"
+            >
+              <AlarmClock size={32} />
+              <Subtitle>{questionTimer} segundos restantes</Subtitle>
+            </Stack>
+            <LinearProgress
+              variant="determinate"
+              value={
+                timePerQuestionInSeconds > 0
+                  ? (questionTimer / timePerQuestionInSeconds) * 100
+                  : 0
+              }
+              sx={{
+                height: 8,
+                borderRadius: 4,
+                bgcolor: 'rgba(0,0,0,0.08)',
+                '& .MuiLinearProgress-bar': {
+                  bgcolor: questionTimer <= 5 ? '#d32f2f' : '#ff0a69',
+                },
+              }}
+            />
           </Stack>
         </Paper>
       </Stack>

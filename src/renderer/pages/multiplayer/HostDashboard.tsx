@@ -21,16 +21,18 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
-import SkipNextIcon from '@mui/icons-material/SkipNext';
-import LeaderboardIcon from '@mui/icons-material/Leaderboard';
-import StopIcon from '@mui/icons-material/Stop';
-import PeopleIcon from '@mui/icons-material/People';
-import TimerIcon from '@mui/icons-material/Timer';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import {
+  AlarmClock,
+  ArrowLeft,
+  CheckCircle2,
+  Copy,
+  Play,
+  SkipForward,
+  Square,
+  Trophy,
+  Users,
+  XCircle,
+} from 'lucide-react';
 
 import { Button, Subtitle, Text, Title } from '../../components';
 import { getSocket } from '../../services/socket';
@@ -50,11 +52,18 @@ type HostPhase =
   | 'SCOREBOARD'
   | 'FINISHED';
 
+const getOptionLetter = (index: number): string => {
+  const startingLetter = 'A';
+  const startingLetterCode = startingLetter.charCodeAt(0);
+  return `${String.fromCharCode(startingLetterCode + index)})`;
+};
+
 export const HostDashboard = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
 
   const [phase, setPhase] = useState<HostPhase>('LOBBY');
+  const [countdownValue, setCountdownValue] = useState<number>(3);
   const [players, setPlayers] = useState<MultiplayerPlayer[]>([]);
   const [currentQuestion, setCurrentQuestion] =
     useState<MultiplayerQuestion | null>(null);
@@ -72,28 +81,36 @@ export const HostDashboard = () => {
     const rejoinHost = () => {
       const hostToken = sessionStorage.getItem('quiz_host_token');
       if (!hostToken) {
-        setErrorMessage('Sessão de host não encontrada. Volte ao menu principal.');
+        setErrorMessage(
+          'Sessão de host não encontrada. Volte ao menu principal.',
+        );
         return;
       }
-      
-      socket.emit('host:rejoin_room', { roomId, hostToken }, (res: { success: boolean; summary?: LobbySummary; error?: string }) => {
-        if (res.success && res.summary) {
-          setPlayers(res.summary.players);
-          if (res.summary.status === 'LOBBY') {
-            setPhase('LOBBY');
-          } else if (res.summary.status === 'COUNTDOWN') {
-            setPhase('COUNTDOWN');
-          } else if (res.summary.status === 'QUESTION') {
-            setPhase('QUESTION');
-          } else if (res.summary.status === 'SCOREBOARD') {
-            setPhase('SCOREBOARD');
-          } else if (res.summary.status === 'FINISHED') {
-            setPhase('FINISHED');
+
+      socket.emit(
+        'host:rejoin_room',
+        { roomId, hostToken },
+        (res: { success: boolean; summary?: LobbySummary; error?: string }) => {
+          if (res.success && res.summary) {
+            setPlayers(res.summary.players);
+            if (res.summary.status === 'LOBBY') {
+              setPhase('LOBBY');
+            } else if (res.summary.status === 'COUNTDOWN') {
+              setPhase('COUNTDOWN');
+            } else if (res.summary.status === 'QUESTION') {
+              setPhase('QUESTION');
+            } else if (res.summary.status === 'SCOREBOARD') {
+              setPhase('SCOREBOARD');
+            } else if (res.summary.status === 'FINISHED') {
+              setPhase('FINISHED');
+            }
+          } else {
+            setErrorMessage(
+              res.error || 'Não foi possível reconectar à sala como host.',
+            );
           }
-        } else {
-          setErrorMessage(res.error || 'Não foi possível reconectar à sala como host.');
-        }
-      });
+        },
+      );
     };
 
     const handleConnect = () => {
@@ -120,7 +137,8 @@ export const HostDashboard = () => {
       setPlayers(data.summary.players);
     };
 
-    const handleCountdown = () => {
+    const handleCountdown = (data?: { seconds?: number }) => {
+      setCountdownValue(typeof data?.seconds === 'number' ? data.seconds : 3);
       setPhase('COUNTDOWN');
     };
 
@@ -176,6 +194,19 @@ export const HostDashboard = () => {
       socket.off('game:finished', handleFinished);
     };
   }, [roomId]);
+
+  // Host countdown effect
+  useEffect(() => {
+    if (phase !== 'COUNTDOWN') return;
+
+    if (countdownValue <= 0) return;
+
+    const timer = setTimeout(() => {
+      setCountdownValue((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [phase, countdownValue]);
 
   // Host question timer countdown
   useEffect(() => {
@@ -338,7 +369,7 @@ export const HostDashboard = () => {
                 >
                   {roomId}
                 </Typography>
-                <ContentCopyIcon sx={{ color: '#ff0a69', fontSize: 36 }} />
+                <Copy size={36} color="#ff0a69" />
               </Box>
 
               <Typography variant="body1" color="text.secondary">
@@ -348,7 +379,7 @@ export const HostDashboard = () => {
               </Typography>
 
               <Box display="flex" alignItems="center" gap={1}>
-                <PeopleIcon color="primary" />
+                <Users size={24} color="#ff0a69" />
                 <Typography variant="h6" fontWeight="bold">
                   Participantes conectados: {players.length} / 10
                 </Typography>
@@ -401,7 +432,7 @@ export const HostDashboard = () => {
                 width="100%"
               >
                 <Button
-                  icon={<PlayArrowIcon />}
+                  icon={<Play size={24} />}
                   onClick={handleStartGame}
                   disabled={players.length === 0}
                 >
@@ -409,7 +440,7 @@ export const HostDashboard = () => {
                 </Button>
 
                 <Button
-                  icon={<ArrowBackIcon />}
+                  icon={<ArrowLeft size={20} />}
                   onClick={handleCancelRoom}
                   fitContent
                   size="small"
@@ -424,41 +455,91 @@ export const HostDashboard = () => {
 
       {/* --- PHASE 2: COUNTDOWN --- */}
       {phase === 'COUNTDOWN' && (
-        <Box textAlign="center" py={8}>
-          <Title variant="h1">PREPAREM-SE!</Title>
-          <Typography variant="h4" color="white" mt={2}>
-            O Quiz vai começar na tela de todos os participantes...
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          gap={2}
+          flexDirection="column"
+          sx={{ minHeight: '60vh' }}
+        >
+          <Title variant="h2">PREPAREM-SE!</Title>
+          <Typography
+            key={countdownValue}
+            variant="h1"
+            fontWeight={900}
+            sx={{
+              fontFamily: 'Anton, sans-serif',
+              fontSize: 'clamp(80px, 20vw, 200px)',
+              color: 'white',
+              textShadow: '4px 4px 8px rgba(0,0,0,0.4)',
+              animation: 'countdownPulse 0.8s ease-out',
+              '@keyframes countdownPulse': {
+                '0%': {
+                  transform: 'scale(1.6)',
+                  opacity: 0,
+                },
+                '50%': {
+                  opacity: 1,
+                },
+                '100%': {
+                  transform: 'scale(1)',
+                  opacity: 1,
+                },
+              },
+            }}
+          >
+            {countdownValue > 0 ? countdownValue : 'VAI!'}
           </Typography>
         </Box>
       )}
 
       {/* --- PHASE 3: QUESTION --- */}
       {phase === 'QUESTION' && currentQuestion && (
-        <Stack spacing={3} sx={{ width: 'min(1000px, 92vw)' }}>
-          {/* Top Bar for Host */}
-          <Paper elevation={4} sx={{ p: 2, borderRadius: 2 }}>
-            <Grid container alignItems="center" spacing={2}>
-              <Grid size={{ xs: 12, sm: 4 }}>
-                <Typography variant="h6" fontWeight="bold">
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          gap={4}
+          flexDirection="column"
+          sx={{ width: 'min(1000px, 92vw)' }}
+        >
+          {/* Top Bar matching GameInstance */}
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={{ xs: 2, md: 3 }}
+            justifyContent="center"
+            alignItems="center"
+            width="100%"
+          >
+            <Paper elevation={3} sx={{ padding: 2, flex: 1, width: '100%' }}>
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                justifyContent="center"
+              >
+                <Trophy size={32} />
+                <Subtitle>
                   Pergunta {currentQuestion.index + 1} de{' '}
                   {currentQuestion.total}
-                </Typography>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 4 }} textAlign="center">
-                <Chip
-                  icon={<TimerIcon />}
-                  label={`${remainingTime}s restantes`}
-                  color={remainingTime <= 5 ? 'error' : 'primary'}
-                  sx={{ fontSize: '1.2rem', p: 2 }}
-                />
-              </Grid>
-              <Grid
-                size={{ xs: 12, sm: 4 }}
-                textAlign={{ xs: 'left', sm: 'right' }}
-              >
-                <Typography variant="body1" fontWeight="bold" color="primary">
-                  {answeredCount} de {players.length} responderam
-                </Typography>
+                </Subtitle>
+              </Stack>
+            </Paper>
+
+            <Paper elevation={3} sx={{ padding: 2, flex: 1, width: '100%' }}>
+              <Stack spacing={1}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <Users size={28} color="#ff0a69" />
+                  <Subtitle>
+                    {answeredCount} de {players.length} responderam
+                  </Subtitle>
+                </Stack>
                 <LinearProgress
                   variant="determinate"
                   value={
@@ -466,68 +547,104 @@ export const HostDashboard = () => {
                       ? (answeredCount / players.length) * 100
                       : 0
                   }
-                  sx={{ height: 10, borderRadius: 5, mt: 0.5 }}
+                  sx={{
+                    height: 8,
+                    borderRadius: 4,
+                    bgcolor: 'rgba(0,0,0,0.08)',
+                    '& .MuiLinearProgress-bar': {
+                      bgcolor: '#51bddf',
+                    },
+                  }}
                 />
-              </Grid>
-            </Grid>
-          </Paper>
+              </Stack>
+            </Paper>
+
+            <Paper elevation={3} sx={{ padding: 2, flex: 1, width: '100%' }}>
+              <Stack spacing={1}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <AlarmClock size={32} />
+                  <Subtitle>{remainingTime} segundos restantes</Subtitle>
+                </Stack>
+                <LinearProgress
+                  variant="determinate"
+                  value={
+                    currentQuestion.timeLimit > 0
+                      ? (remainingTime / currentQuestion.timeLimit) * 100
+                      : 0
+                  }
+                  sx={{
+                    height: 8,
+                    borderRadius: 4,
+                    bgcolor: 'rgba(0,0,0,0.08)',
+                    '& .MuiLinearProgress-bar': {
+                      bgcolor: remainingTime <= 5 ? '#d32f2f' : '#ff0a69',
+                    },
+                  }}
+                />
+              </Stack>
+            </Paper>
+          </Stack>
 
           {/* Question Text */}
-          <Paper elevation={4} sx={{ p: 4, borderRadius: 2 }}>
-            <Typography variant="h4" fontWeight="bold" textAlign="center">
-              {currentQuestion.question}
-            </Typography>
+          <Paper
+            elevation={3}
+            sx={{
+              paddingTop: 2,
+              paddingRight: { xs: 2, sm: 6 },
+              paddingLeft: { xs: 2, sm: 6 },
+              paddingBottom: 2,
+              width: '100%',
+              textAlign: 'center',
+            }}
+          >
+            <Subtitle>
+              Pergunta {currentQuestion.index + 1} de {currentQuestion.total}:
+            </Subtitle>
+            <Typography variant="h3">{currentQuestion.question}</Typography>
           </Paper>
 
           {/* Options (Host sees correct answer highlighted) */}
-          <Grid container spacing={2}>
+          <Grid container spacing={3} width="100%">
             {currentQuestion.options.map((opt, idx) => {
               const isCorrect = idx === currentQuestion.answer;
+              const shouldCenterLastOption =
+                currentQuestion.options.length % 2 &&
+                idx === currentQuestion.options.length - 1;
+
               return (
-                <Grid size={{ xs: 12, sm: 6 }} key={`host-opt-${idx}`}>
-                  <Card
-                    sx={{
-                      p: 2,
-                      border: isCorrect
-                        ? '3px solid #2e7d32'
-                        : '1px solid #ddd',
-                      bgcolor: isCorrect ? '#e8f5e9' : 'white',
-                    }}
-                  >
-                    <Stack direction="row" spacing={1.5} alignItems="center">
-                      <Chip
-                        label={String.fromCharCode(65 + idx)}
-                        color={isCorrect ? 'success' : 'default'}
-                        sx={{ fontWeight: 'bold' }}
-                      />
-                      <Typography
-                        variant="h6"
-                        sx={{
-                          color: isCorrect ? '#2e7d32' : 'inherit',
-                          fontWeight: isCorrect ? 'bold' : 'normal',
-                        }}
-                      >
-                        {opt} {isCorrect && '✓ (Correta)'}
-                      </Typography>
-                    </Stack>
-                  </Card>
+                <Grid
+                  key={`host-opt-${idx}`}
+                  size={{ xs: 12, sm: 6 }}
+                  offset={{ xs: 0, sm: shouldCenterLastOption ? 3 : 0 }}
+                >
+                  <Button disabled isCorrect={isCorrect}>
+                    <>
+                      {getOptionLetter(idx)} {opt}
+                      {isCorrect ? ' ✓ (Correta)' : ''}
+                    </>
+                  </Button>
                 </Grid>
               );
             })}
           </Grid>
 
           {/* Control Bar for Host */}
-          <Box display="flex" justifyContent="center" gap={2} pt={2}>
+          <Box display="flex" justifyContent="center" gap={2} pt={1}>
             <Button
               fitContent
               size="small"
-              icon={<StopIcon />}
+              icon={<Square size={18} />}
               onClick={handleEndRoundNow}
             >
               Encerrar Tempo Agora
             </Button>
           </Box>
-        </Stack>
+        </Box>
       )}
 
       {/* --- PHASE 4: ROUND RESULT --- */}
@@ -563,14 +680,14 @@ export const HostDashboard = () => {
                       <TableCell align="center">
                         {pr.isCorrect ? (
                           <Chip
-                            icon={<CheckCircleIcon />}
+                            icon={<CheckCircle2 size={16} />}
                             label="Acertou!"
                             color="success"
                             size="small"
                           />
                         ) : (
                           <Chip
-                            icon={<CancelIcon />}
+                            icon={<XCircle size={16} />}
                             label={pr.answered ? 'Errou' : 'Não respondeu'}
                             color="error"
                             size="small"
@@ -590,14 +707,14 @@ export const HostDashboard = () => {
             <Box display="flex" justifyContent="center" gap={2} mt={4}>
               <Button
                 fitContent
-                icon={<LeaderboardIcon />}
+                icon={<Trophy size={20} />}
                 onClick={handleShowScoreboard}
               >
                 Ver Placar Geral
               </Button>
               <Button
                 fitContent
-                icon={<SkipNextIcon />}
+                icon={<SkipForward size={20} />}
                 onClick={handleNextQuestion}
               >
                 {roundResult.hasMoreQuestions
@@ -688,7 +805,7 @@ export const HostDashboard = () => {
             <Box display="flex" justifyContent="center" gap={2} mt={4}>
               <Button
                 fitContent
-                icon={<SkipNextIcon />}
+                icon={<SkipForward size={20} />}
                 onClick={handleNextQuestion}
               >
                 Avançar para Próxima Pergunta

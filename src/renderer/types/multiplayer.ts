@@ -11,12 +11,12 @@ export type MultiplayerPlayer = {
 export type LobbySummary = {
   roomId: string;
   status:
-  | 'LOBBY'
-  | 'COUNTDOWN'
-  | 'QUESTION'
-  | 'ROUND_RESULT'
-  | 'SCOREBOARD'
-  | 'FINISHED';
+    | 'LOBBY'
+    | 'COUNTDOWN'
+    | 'QUESTION'
+    | 'ROUND_RESULT'
+    | 'SCOREBOARD'
+    | 'FINISHED';
   playerCount: number;
   maxPlayers: number;
   totalQuestions: number;

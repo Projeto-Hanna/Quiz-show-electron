@@ -22,11 +22,14 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
-import HourglassTopIcon from '@mui/icons-material/HourglassTop';
-import TimerIcon from '@mui/icons-material/Timer';
-import PeopleIcon from '@mui/icons-material/People';
+import {
+  AlarmClock,
+  CheckCircle2,
+  Hourglass,
+  Trophy,
+  Users,
+  XCircle,
+} from 'lucide-react';
 
 import { Button, Subtitle, Text, Title } from '../../components';
 import { getSocket } from '../../services/socket';
@@ -46,6 +49,12 @@ type PlayerPhase =
   | 'SCOREBOARD'
   | 'FINISHED';
 
+const getOptionLetter = (index: number): string => {
+  const startingLetter = 'A';
+  const startingLetterCode = startingLetter.charCodeAt(0);
+  return `${String.fromCharCode(startingLetterCode + index)})`;
+};
+
 export const PlayerRoom = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
@@ -58,6 +67,7 @@ export const PlayerRoom = () => {
   );
 
   const [phase, setPhase] = useState<PlayerPhase>('LOBBY');
+  const [countdownValue, setCountdownValue] = useState<number>(3);
   const [players, setPlayers] = useState<MultiplayerPlayer[]>([]);
   const [currentQuestion, setCurrentQuestion] =
     useState<MultiplayerQuestion | null>(null);
@@ -100,7 +110,10 @@ export const PlayerRoom = () => {
             if (res.player) {
               sessionStorage.setItem('quiz_player_id', res.player.id);
               if (res.player.playerToken) {
-                sessionStorage.setItem('quiz_player_token', res.player.playerToken);
+                sessionStorage.setItem(
+                  'quiz_player_token',
+                  res.player.playerToken,
+                );
               }
               sessionStorage.setItem('quiz_player_name', res.player.name);
             }
@@ -144,7 +157,8 @@ export const PlayerRoom = () => {
       setPlayers(data.summary.players);
     };
 
-    const handleCountdown = () => {
+    const handleCountdown = (data?: { seconds?: number }) => {
+      setCountdownValue(typeof data?.seconds === 'number' ? data.seconds : 3);
       setPhase('COUNTDOWN');
     };
 
@@ -198,6 +212,19 @@ export const PlayerRoom = () => {
     };
   }, [roomId, navigate]);
 
+  // Countdown effect
+  useEffect(() => {
+    if (phase !== 'COUNTDOWN') return;
+
+    if (countdownValue <= 0) return;
+
+    const timer = setTimeout(() => {
+      setCountdownValue((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [phase, countdownValue]);
+
   // Synchronized countdown for player
   useEffect(() => {
     if (phase !== 'QUESTION' || remainingTime <= 0) return;
@@ -217,7 +244,7 @@ export const PlayerRoom = () => {
 
     const socket = getSocket();
     const playerToken = sessionStorage.getItem('quiz_player_token');
-    
+
     socket.emit('player:submit_answer', {
       roomId,
       playerId,
@@ -226,9 +253,7 @@ export const PlayerRoom = () => {
     });
   };
 
-  const myResult = roundResult?.playerResults.find(
-    (p) => p.id === playerId,
-  );
+  const myResult = roundResult?.playerResults.find((p) => p.id === playerId);
   const myScoreEntry = scoreboard.find((p) => p.id === playerId);
 
   const handleLeaveRoom = () => {
@@ -296,7 +321,7 @@ export const PlayerRoom = () => {
               />
 
               <Box display="flex" alignItems="center" gap={1} pt={1}>
-                <PeopleIcon color="primary" />
+                <Users size={22} color="#ff0a69" />
                 <Typography variant="h6">
                   Jogadores na sala ({players.length}/10):
                 </Typography>
@@ -320,8 +345,7 @@ export const PlayerRoom = () => {
                     avatar={
                       <Avatar
                         sx={{
-                          bgcolor:
-                            p.id === playerId ? '#ff0a69' : '#51bddf',
+                          bgcolor: p.id === playerId ? '#ff0a69' : '#51bddf',
                         }}
                       >
                         {p.name[0]}
@@ -352,60 +376,123 @@ export const PlayerRoom = () => {
 
       {/* --- PHASE 2: COUNTDOWN --- */}
       {phase === 'COUNTDOWN' && (
-        <Box textAlign="center" py={8}>
-          <Title variant="h1">ATENÇÃO!</Title>
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          gap={2}
+          flexDirection="column"
+          sx={{ minHeight: '60vh' }}
+        >
+          <Title variant="h2">PREPARE-SE!</Title>
           <Typography
-            variant="h2"
-            fontWeight="bold"
+            key={countdownValue}
+            variant="h1"
+            fontWeight={900}
             sx={{
-              color: 'white',
               fontFamily: 'Anton, sans-serif',
-              fontSize: 'clamp(60px, 15vw, 120px)',
-              animation: 'pulse 1s infinite',
+              fontSize: 'clamp(80px, 20vw, 200px)',
+              color: 'white',
+              textShadow: '4px 4px 8px rgba(0,0,0,0.4)',
+              animation: 'countdownPulse 0.8s ease-out',
+              '@keyframes countdownPulse': {
+                '0%': {
+                  transform: 'scale(1.6)',
+                  opacity: 0,
+                },
+                '50%': {
+                  opacity: 1,
+                },
+                '100%': {
+                  transform: 'scale(1)',
+                  opacity: 1,
+                },
+              },
             }}
           >
-            VAI COMEÇAR!
+            {countdownValue > 0 ? countdownValue : 'VAI!'}
           </Typography>
         </Box>
       )}
 
       {/* --- PHASE 3: QUESTION --- */}
       {phase === 'QUESTION' && currentQuestion && (
-        <Stack spacing={3} sx={{ width: 'min(900px, 92vw)' }}>
-          {/* Top Bar */}
-          <Paper elevation={4} sx={{ p: 2, borderRadius: 2 }}>
-            <Grid container alignItems="center" spacing={2}>
-              <Grid size={{ xs: 6, sm: 6 }}>
-                <Typography variant="h6" fontWeight="bold">
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          gap={4}
+          flexDirection="column"
+          sx={{ width: 'min(950px, 92vw)' }}
+        >
+          {/* Top Bar matching GameInstance */}
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={{ xs: 2, sm: 6 }}
+            justifyContent="center"
+            alignItems="center"
+            width="100%"
+          >
+            <Paper elevation={3} sx={{ padding: 2 }}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Trophy size={32} />
+                <Subtitle>
                   Pergunta {currentQuestion.index + 1} de{' '}
                   {currentQuestion.total}
-                </Typography>
-              </Grid>
-              <Grid size={{ xs: 6, sm: 6 }} textAlign="right">
-                <Chip
-                  icon={<TimerIcon />}
-                  label={`${remainingTime}s`}
-                  color={remainingTime <= 5 ? 'error' : 'primary'}
-                  sx={{ fontSize: '1.2rem', fontWeight: 'bold' }}
+                </Subtitle>
+              </Stack>
+            </Paper>
+
+            <Paper
+              elevation={3}
+              sx={{ padding: 2, minWidth: { xs: '100%', sm: 280 } }}
+            >
+              <Stack spacing={1}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <AlarmClock size={32} />
+                  <Subtitle>{remainingTime} segundos restantes</Subtitle>
+                </Stack>
+                <LinearProgress
+                  variant="determinate"
+                  value={
+                    currentQuestion.timeLimit > 0
+                      ? (remainingTime / currentQuestion.timeLimit) * 100
+                      : 0
+                  }
+                  sx={{
+                    height: 8,
+                    borderRadius: 4,
+                    bgcolor: 'rgba(0,0,0,0.08)',
+                    '& .MuiLinearProgress-bar': {
+                      bgcolor: remainingTime <= 5 ? '#d32f2f' : '#ff0a69',
+                    },
+                  }}
                 />
-              </Grid>
-            </Grid>
-            <LinearProgress
-              variant="determinate"
-              value={
-                currentQuestion.timeLimit > 0
-                  ? (remainingTime / currentQuestion.timeLimit) * 100
-                  : 0
-              }
-              sx={{ height: 8, borderRadius: 4, mt: 1.5 }}
-            />
-          </Paper>
+              </Stack>
+            </Paper>
+          </Stack>
 
           {/* Question Text */}
-          <Paper elevation={4} sx={{ p: { xs: 2.5, sm: 4 }, borderRadius: 2 }}>
-            <Typography variant="h4" fontWeight="bold" textAlign="center">
-              {currentQuestion.question}
-            </Typography>
+          <Paper
+            elevation={3}
+            sx={{
+              paddingTop: 2,
+              paddingRight: { xs: 2, sm: 6 },
+              paddingLeft: { xs: 2, sm: 6 },
+              paddingBottom: 2,
+              width: '100%',
+              textAlign: 'center',
+            }}
+          >
+            <Subtitle>
+              Pergunta {currentQuestion.index + 1} de {currentQuestion.total}:
+            </Subtitle>
+            <Typography variant="h3">{currentQuestion.question}</Typography>
           </Paper>
 
           {/* Waiting banner if already answered */}
@@ -417,6 +504,7 @@ export const PlayerRoom = () => {
                 bgcolor: '#e3f2fd',
                 border: '2px solid #2196f3',
                 borderRadius: 2,
+                width: '100%',
               }}
             >
               <Stack
@@ -425,7 +513,7 @@ export const PlayerRoom = () => {
                 alignItems="center"
                 justifyContent="center"
               >
-                <CheckCircleIcon sx={{ color: '#2196f3', fontSize: 32 }} />
+                <CheckCircle2 color="#2196f3" size={28} />
                 <Typography variant="h6" fontWeight="bold" color="#1565c0">
                   Resposta computada! Aguardando o término do tempo...
                 </Typography>
@@ -434,59 +522,37 @@ export const PlayerRoom = () => {
           )}
 
           {/* Option Buttons */}
-          <Grid container spacing={2.5}>
+          <Grid container spacing={3} width="100%">
             {currentQuestion.options.map((option, index) => {
               const isSelected = selectedOption === index;
+              const shouldCenterLastOption =
+                currentQuestion.options.length % 2 &&
+                index === currentQuestion.options.length - 1;
+
               return (
-                <Grid size={{ xs: 12, sm: 6 }} key={`player-option-${index}`}>
-                  <Card
-                    onClick={() => handleSelectOption(index)}
-                    sx={{
-                      p: 2.5,
-                      cursor:
-                        hasSubmitted || remainingTime <= 0
-                          ? 'default'
-                          : 'pointer',
-                      borderRadius: 2,
-                      border: isSelected
-                        ? '4px solid #ff0a69'
-                        : '2px solid #e0e0e0',
-                      bgcolor: isSelected ? '#fff0f6' : 'white',
-                      transition: 'transform 0.15s, box-shadow 0.15s',
-                      opacity: hasSubmitted && !isSelected ? 0.6 : 1,
-                      '&:hover': {
-                        transform:
-                          hasSubmitted || remainingTime <= 0
-                            ? 'none'
-                            : 'scale(1.02)',
-                        boxShadow:
-                          hasSubmitted || remainingTime <= 0 ? 'none' : 4,
-                      },
-                    }}
+                <Grid
+                  key={`player-option-${index}`}
+                  size={{ xs: 12, sm: 6 }}
+                  offset={{ xs: 0, sm: shouldCenterLastOption ? 3 : 0 }}
+                >
+                  <div
+                    aria-label={`Resposta ${getOptionLetter(index)} ${option}`}
                   >
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <Avatar
-                        sx={{
-                          bgcolor: isSelected ? '#ff0a69' : '#51bddf',
-                          fontWeight: 'bold',
-                          color: 'white',
-                        }}
-                      >
-                        {String.fromCharCode(65 + index)}
-                      </Avatar>
-                      <Typography
-                        variant="h6"
-                        fontWeight={isSelected ? 'bold' : 'normal'}
-                      >
-                        {option}
-                      </Typography>
-                    </Stack>
-                  </Card>
+                    <Button
+                      selected={isSelected}
+                      disabled={hasSubmitted || remainingTime <= 0}
+                      onClick={() => handleSelectOption(index)}
+                    >
+                      <>
+                        {getOptionLetter(index)} {option}
+                      </>
+                    </Button>
+                  </div>
                 </Grid>
               );
             })}
           </Grid>
-        </Stack>
+        </Box>
       )}
 
       {/* --- PHASE 4: ROUND RESULT --- */}
@@ -504,7 +570,7 @@ export const PlayerRoom = () => {
             {myResult ? (
               myResult.isCorrect ? (
                 <Stack spacing={2} alignItems="center">
-                  <CheckCircleIcon sx={{ color: '#2e7d32', fontSize: 72 }} />
+                  <CheckCircle2 color="#2e7d32" size={72} />
                   <Typography variant="h4" fontWeight="bold" color="#2e7d32">
                     Você Acertou!
                   </Typography>
@@ -525,7 +591,7 @@ export const PlayerRoom = () => {
                 </Stack>
               ) : (
                 <Stack spacing={2} alignItems="center">
-                  <CancelIcon sx={{ color: '#d32f2f', fontSize: 72 }} />
+                  <XCircle color="#d32f2f" size={72} />
                   <Typography variant="h4" fontWeight="bold" color="#d32f2f">
                     {selectedOption === null
                       ? 'Tempo Esgotado!'
@@ -651,7 +717,7 @@ export const PlayerRoom = () => {
                 justifyContent="center"
                 alignItems="center"
               >
-                <HourglassTopIcon color="primary" />
+                <Hourglass color="#ff0a69" size={24} />
                 <Typography variant="body1" color="text.secondary">
                   Aguardando o Host avançar para a próxima pergunta...
                 </Typography>

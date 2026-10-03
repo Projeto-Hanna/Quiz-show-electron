@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Box,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -9,9 +10,9 @@ import {
   Paper,
   Stack,
   TextField,
+  Typography,
 } from '@mui/material';
-import LoginIcon from '@mui/icons-material/Login';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { ArrowLeft, LogIn } from 'lucide-react';
 
 import { Button, Menu, Subtitle, Text, Title } from '../../components';
 import { getSocket } from '../../services/socket';
@@ -42,6 +43,16 @@ export const PlayerJoin = () => {
 
     setIsLoading(true);
     const socket = getSocket();
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    const timeout = setTimeout(() => {
+      setIsLoading(false);
+      setErrorMessage(
+        'O servidor demorou muito para responder. Verifique sua conexão e tente novamente.',
+      );
+    }, 12000);
 
     socket.emit(
       'player:join_room',
@@ -52,6 +63,7 @@ export const PlayerJoin = () => {
         summary?: LobbySummary;
         error?: string;
       }) => {
+        clearTimeout(timeout);
         setIsLoading(false);
         if (res.success && res.player) {
           // Save session info
@@ -75,6 +87,41 @@ export const PlayerJoin = () => {
   return (
     <>
       <main>
+        {/* Loading Dialog for Joining */}
+        <Dialog
+          open={isLoading}
+          aria-labelledby="joining-room-dialog-title"
+          maxWidth="xs"
+          fullWidth
+          slotProps={{
+            paper: {
+              sx: {
+                p: { xs: 3, sm: 4 },
+                textAlign: 'center',
+                borderRadius: 3,
+              },
+            },
+          }}
+        >
+          <Stack spacing={2.5} alignItems="center" py={1}>
+            <CircularProgress
+              size={56}
+              thickness={4.5}
+              sx={{ color: '#ff0a69' }}
+            />
+            <Typography
+              id="joining-room-dialog-title"
+              variant="h5"
+              fontWeight="bold"
+            >
+              Entrando na Sala...
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Validando o código e conectando à partida. Por favor, aguarde...
+            </Typography>
+          </Stack>
+        </Dialog>
+
         <Dialog
           open={Boolean(errorMessage)}
           onClose={() => setErrorMessage('')}
@@ -110,6 +157,7 @@ export const PlayerJoin = () => {
                     label="Código da Sala"
                     placeholder="Ex: ABCD"
                     value={roomId}
+                    disabled={isLoading}
                     onChange={(e) =>
                       setRoomId(e.target.value.toUpperCase().slice(0, 6))
                     }
@@ -130,6 +178,7 @@ export const PlayerJoin = () => {
                     label="Seu Nome / Apelido"
                     placeholder="Como você quer ser chamado?"
                     value={playerName}
+                    disabled={isLoading}
                     onChange={(e) => setPlayerName(e.target.value.slice(0, 20))}
                     inputProps={{
                       style: {
@@ -141,7 +190,13 @@ export const PlayerJoin = () => {
 
                   <Box display="flex" justifyContent="center" pt={1}>
                     <Button
-                      icon={<LoginIcon />}
+                      icon={
+                        isLoading ? (
+                          <CircularProgress size={20} sx={{ color: 'white' }} />
+                        ) : (
+                          <LogIn size={20} />
+                        )
+                      }
                       onClick={handleJoin}
                       disabled={
                         isLoading || !roomId.trim() || !playerName.trim()
@@ -157,7 +212,11 @@ export const PlayerJoin = () => {
         </Menu>
 
         <Link to="/multiplayer">
-          <Button fitContent icon={<ArrowBackIcon />}>
+          <Button
+            fitContent
+            disabled={isLoading}
+            icon={<ArrowLeft size={18} />}
+          >
             Voltar
           </Button>
         </Link>
