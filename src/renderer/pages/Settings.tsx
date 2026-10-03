@@ -177,7 +177,6 @@ export const Settings = () => {
               paddingX: { xs: 2, sm: 6 },
               paddingY: 2,
               maxWidth: 720,
-              width: '100%',
             }}
           >
             <Subtitle>Servidor Multiplayer (Online)</Subtitle>
