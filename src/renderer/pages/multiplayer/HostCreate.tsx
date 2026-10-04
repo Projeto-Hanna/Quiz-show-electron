@@ -205,7 +205,7 @@ export const HostCreate = () => {
         </Dialog>
 
         <Menu direction="column">
-          <Stack spacing={3} sx={{ width: 'min(900px, 90vw)' }}>
+          <Stack spacing={3} sx={{ width: '100%', maxWidth: '900px' }}>
             <Title variant="h3">Criar Sala Multiplayer (Host)</Title>
             <Text variant="h6" color="white" textAlign="center">
               Você será o apresentador da partida. Até 10 jogadores poderão se

@@ -291,7 +291,7 @@ export const PlayerRoom = () => {
       {phase === 'LOBBY' && (
         <Stack
           spacing={4}
-          sx={{ width: 'min(750px, 92vw)', alignItems: 'center' }}
+          sx={{ width: '100%', maxWidth: '750px', alignItems: 'center' }}
         >
           <Title variant="h3">Sala de Espera</Title>
 
@@ -423,7 +423,7 @@ export const PlayerRoom = () => {
           alignItems="center"
           gap={4}
           flexDirection="column"
-          sx={{ width: 'min(950px, 92vw)' }}
+          sx={{ width: '100%', maxWidth: '950px' }}
         >
           {/* Top Bar matching GameInstance */}
           <Stack
@@ -492,7 +492,7 @@ export const PlayerRoom = () => {
             <Subtitle>
               Pergunta {currentQuestion.index + 1} de {currentQuestion.total}:
             </Subtitle>
-            <Typography variant="h3">{currentQuestion.question}</Typography>
+            <Typography variant="h3" sx={{ fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>{currentQuestion.question}</Typography>
           </Paper>
 
           {/* Waiting banner if already answered */}
@@ -559,7 +559,7 @@ export const PlayerRoom = () => {
       {phase === 'ROUND_RESULT' && roundResult && (
         <Stack
           spacing={3}
-          sx={{ width: 'min(700px, 92vw)', alignItems: 'center' }}
+          sx={{ width: '100%', maxWidth: '700px', alignItems: 'center' }}
         >
           <Title variant="h3">Fim do Tempo!</Title>
 
@@ -625,7 +625,7 @@ export const PlayerRoom = () => {
 
       {/* --- PHASE 5: SCOREBOARD --- */}
       {phase === 'SCOREBOARD' && (
-        <Stack spacing={3} sx={{ width: 'min(850px, 92vw)' }}>
+        <Stack spacing={3} sx={{ width: '100%', maxWidth: '850px' }}>
           <Title variant="h3">Placar Geral</Title>
 
           {/* User's Current Position Card */}
@@ -647,8 +647,8 @@ export const PlayerRoom = () => {
             </Paper>
           )}
 
-          <Paper elevation={4} sx={{ p: 3, borderRadius: 2 }}>
-            <TableContainer>
+          <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2, width: '100%' }}>
+            <TableContainer sx={{ overflowX: 'auto' }}>
               <Table>
                 <TableHead>
                   <TableRow>
@@ -731,7 +731,7 @@ export const PlayerRoom = () => {
       {phase === 'FINISHED' && (
         <Stack
           spacing={3}
-          sx={{ width: 'min(850px, 92vw)', alignItems: 'center' }}
+          sx={{ width: '100%', maxWidth: '850px', alignItems: 'center' }}
         >
           <Title variant="h2">Fim de Jogo! 🏆</Title>
 

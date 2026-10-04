@@ -144,7 +144,7 @@ export const PlayerJoin = () => {
         </Dialog>
 
         <Menu direction="column">
-          <Stack spacing={3} sx={{ width: 'min(550px, 90vw)' }}>
+          <Stack spacing={3} sx={{ width: '100%', maxWidth: '550px' }}>
             <Title variant="h3">Entrar em uma Sala</Title>
 
             <Paper elevation={4} sx={{ p: { xs: 3, sm: 4 }, borderRadius: 3 }}>

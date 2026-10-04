@@ -1,6 +1,6 @@
 .fancy {
   position: relative;
-  padding: 14px;
+  padding: 14px 50px;
 }
 
 .fancy::before {

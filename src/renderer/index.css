@@ -1,5 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 :root {
   font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
   line-height: 1.5;
@@ -56,5 +61,5 @@ main {
   justify-content: center;
   flex-direction: column;
   gap: 5vh;
-  padding: clamp(12px, 2.5vw, 32px);
+  padding: clamp(16px, 4vw, 32px);
 }

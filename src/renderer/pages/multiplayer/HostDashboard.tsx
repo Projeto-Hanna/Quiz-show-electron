@@ -352,7 +352,7 @@ export const HostDashboard = () => {
       {phase === 'LOBBY' && (
         <Stack
           spacing={4}
-          sx={{ width: 'min(1000px, 92vw)', alignItems: 'center' }}
+          sx={{ width: '100%', maxWidth: '1000px', alignItems: 'center' }}
         >
           <Title variant="h3">Painel do Host (Apresentador)</Title>
 
@@ -530,7 +530,7 @@ export const HostDashboard = () => {
           alignItems="center"
           gap={4}
           flexDirection="column"
-          sx={{ width: 'min(1000px, 92vw)' }}
+          sx={{ width: '100%', maxWidth: '1000px' }}
         >
           {/* Top Bar matching GameInstance */}
           <Stack
@@ -633,7 +633,7 @@ export const HostDashboard = () => {
             <Subtitle>
               Pergunta {currentQuestion.index + 1} de {currentQuestion.total}:
             </Subtitle>
-            <Typography variant="h3">{currentQuestion.question}</Typography>
+            <Typography variant="h3" sx={{ fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>{currentQuestion.question}</Typography>
           </Paper>
 
           {/* Options (Host sees correct answer highlighted) */}
@@ -677,13 +677,13 @@ export const HostDashboard = () => {
 
       {/* --- PHASE 4: ROUND RESULT --- */}
       {phase === 'ROUND_RESULT' && roundResult && (
-        <Stack spacing={3} sx={{ width: 'min(900px, 92vw)' }}>
+        <Stack spacing={3} sx={{ width: '100%', maxWidth: '900px' }}>
           <Title variant="h3">Fim da Rodada!</Title>
 
-          <Paper elevation={4} sx={{ p: 3, borderRadius: 2 }}>
+          <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2, width: '100%' }}>
             <Subtitle>Resumo das Respostas dos Jogadores</Subtitle>
 
-            <TableContainer sx={{ mt: 2 }}>
+            <TableContainer sx={{ mt: 2, overflowX: 'auto' }}>
               <Table>
                 <TableHead>
                   <TableRow>
@@ -732,7 +732,7 @@ export const HostDashboard = () => {
               </Table>
             </TableContainer>
 
-            <Box display="flex" justifyContent="center" gap={2} mt={4}>
+            <Box display="flex" justifyContent="center" gap={2} mt={4} flexWrap="wrap">
               <Button
                 fitContent
                 icon={<Trophy size={20} />}
@@ -757,11 +757,11 @@ export const HostDashboard = () => {
 
       {/* --- PHASE 5: SCOREBOARD --- */}
       {phase === 'SCOREBOARD' && (
-        <Stack spacing={3} sx={{ width: 'min(900px, 92vw)' }}>
+        <Stack spacing={3} sx={{ width: '100%', maxWidth: '900px' }}>
           <Title variant="h3">Placar Geral</Title>
 
-          <Paper elevation={4} sx={{ p: 3, borderRadius: 2 }}>
-            <TableContainer>
+          <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2, width: '100%' }}>
+            <TableContainer sx={{ overflowX: 'auto' }}>
               <Table>
                 <TableHead>
                   <TableRow>
@@ -831,7 +831,7 @@ export const HostDashboard = () => {
               </Table>
             </TableContainer>
 
-            <Box display="flex" justifyContent="center" gap={2} mt={4}>
+            <Box display="flex" justifyContent="center" gap={2} mt={4} flexWrap="wrap">
               <Button
                 fitContent
                 icon={<SkipForward size={20} />}
@@ -852,7 +852,7 @@ export const HostDashboard = () => {
       {phase === 'FINISHED' && (
         <Stack
           spacing={3}
-          sx={{ width: 'min(900px, 92vw)', alignItems: 'center' }}
+          sx={{ width: '100%', maxWidth: '900px', alignItems: 'center' }}
         >
           <Title variant="h2">Fim de Jogo! 🏆</Title>
 
