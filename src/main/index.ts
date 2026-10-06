@@ -32,6 +32,9 @@ function createWindow() {
   win.maximize();
   win.show();
 
+  // Open debug tools:
+  // win.webContents.openDevTools();
+
   if (isDev) {
     win.loadURL('http://localhost:5173');
   } else {
@@ -48,7 +51,7 @@ ipcMain.on('app:open-external', async (_event, url: string) => {
 
   try {
     await shell.openExternal(url);
-  } catch {}
+  } catch { }
 });
 
 Menu.setApplicationMenu(null);

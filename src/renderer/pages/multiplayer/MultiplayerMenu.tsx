@@ -4,7 +4,14 @@ import LoginIcon from '@mui/icons-material/Login';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Box } from '@mui/material';
 
-import { Button, Footer, Logo, Menu, Title } from '../../components';
+import {
+  Button,
+  Footer,
+  Logo,
+  Menu,
+  Title,
+  ServerStatusBadge,
+} from '../../components';
 
 export const MultiplayerMenu = () => {
   return (
@@ -37,7 +44,15 @@ export const MultiplayerMenu = () => {
               </Link>
             </Box>
           </Box>
-          <Footer />
+          <Box
+            display="flex"
+            flexDirection="column"
+            alignItems="center"
+            gap="16px"
+          >
+            <ServerStatusBadge />
+            <Footer />
+          </Box>
         </Menu>
       </main>
     </>

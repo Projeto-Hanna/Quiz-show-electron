@@ -83,7 +83,7 @@ export const Settings = () => {
                 onChange={handleUnansweredBehaviorChange}
                 sx={{
                   flexDirection: { xs: 'column', sm: 'row' },
-                  gap: { xs: 1, sm: 2, md: 4, lg: 4 },
+                  gap: { xs: 1 },
                 }}
               >
                 <FormControlLabel
@@ -148,7 +148,7 @@ export const Settings = () => {
                 onChange={handleMultiplayerAllAnsweredChange}
                 sx={{
                   flexDirection: { xs: 'column', sm: 'row' },
-                  gap: { xs: 1, sm: 2, md: 4, lg: 4 },
+                  gap: { xs: 1, },
                 }}
               >
                 <FormControlLabel

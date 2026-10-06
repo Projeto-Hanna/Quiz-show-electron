@@ -14,7 +14,14 @@ import {
 } from '@mui/material';
 import { ArrowLeft, LogIn } from 'lucide-react';
 
-import { Button, Menu, Subtitle, Text, Title } from '../../components';
+import {
+  Button,
+  Menu,
+  Subtitle,
+  Text,
+  Title,
+  ServerStatusBadge,
+} from '../../components';
 import { getSocket } from '../../services/socket';
 import type { LobbySummary, MultiplayerPlayer } from '../../types';
 
@@ -146,6 +153,10 @@ export const PlayerJoin = () => {
         <Menu direction="column">
           <Stack spacing={3} sx={{ width: '100%', maxWidth: '550px' }}>
             <Title variant="h3">Entrar em uma Sala</Title>
+
+            <Box display="flex" justifyContent="center">
+              <ServerStatusBadge />
+            </Box>
 
             <Paper elevation={4} sx={{ p: { xs: 3, sm: 4 }, borderRadius: 3 }}>
               <form onSubmit={handleJoin}>

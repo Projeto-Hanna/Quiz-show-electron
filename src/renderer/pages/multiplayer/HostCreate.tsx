@@ -20,6 +20,7 @@ import {
   Title,
   QuestionSourceSelector,
   TimePerQuestionSelector,
+  ServerStatusBadge,
 } from '../../components';
 import { getSocket } from '../../services/socket';
 import type { Question } from '../../types';
@@ -211,6 +212,10 @@ export const HostCreate = () => {
               Você será o apresentador da partida. Até 10 jogadores poderão se
               conectar pelo código de convite!
             </Text>
+
+            <Box display="flex" justifyContent="center">
+              <ServerStatusBadge />
+            </Box>
 
             <QuestionSourceSelector
               onQuestionsLoaded={handleQuestionsLoaded}
