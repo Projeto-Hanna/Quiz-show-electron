@@ -39,7 +39,7 @@ export const PlayerJoin = () => {
     const cleanName = playerName.trim();
 
     if (!cleanRoomId) {
-      setErrorMessage('Digite o código de 4 letras da sala.');
+      setErrorMessage('Digite o código de 6 letras da sala.');
       return;
     }
 

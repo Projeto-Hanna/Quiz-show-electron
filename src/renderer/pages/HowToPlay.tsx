@@ -136,9 +136,9 @@ export const HowToPlay = () => {
               alignItems="center"
               textAlign="left"
             >
-              <Subtitle>Jogar uma partida</Subtitle>
+              <Subtitle>Jogar uma partida (Modo Local)</Subtitle>
               <Text variant="h5">
-                Ao começar uma partida, o jogo funcionará da seguinte forma:
+                Ao começar uma partida no modo local, o jogo funcionará da seguinte forma:
               </Text>
               <List sx={{ listStyleType: 'disc', padding: 0 }}>
                 <ListItem sx={{ display: 'list-item' }}>
@@ -204,7 +204,7 @@ export const HowToPlay = () => {
                           fontWeight="bold"
                           sx={{ display: 'inline' }}
                         >
-                          Ao acertar uma pergunta, você receberá 100 pontos. Ao
+                          Ao acertar uma pergunta no modo local, você receberá 100 pontos fixos. Ao
                           errar, receberá 0.
                         </Text>{' '}
                         Em ambos os casos, passará para a próxima pergunta, se
@@ -228,6 +228,58 @@ export const HowToPlay = () => {
               <Text variant="h5" textAlign="center">
                 Se necessário, jogue as partidas teste para poder se acostumar.
               </Text>
+            </Box>
+          </Paper>
+          <Divider color="light" />
+          <Paper
+            elevation={3}
+            sx={{
+              paddingX: { xs: 2, sm: 6 },
+              paddingY: 4,
+              maxWidth: 720,
+            }}
+          >
+            <Box
+              display="flex"
+              gap="10px"
+              flexDirection="column"
+              justifyContent="center"
+              alignItems="center"
+              textAlign="left"
+            >
+              <Subtitle>Modo Multiplayer</Subtitle>
+              <Text variant="h5">
+                Regras específicas para jogar online com seus amigos:
+              </Text>
+              <List sx={{ listStyleType: 'disc', padding: 0 }}>
+                <ListItem sx={{ display: 'list-item' }}>
+                  <ListItemText
+                    primary={
+                      <Text variant="h6" color="black" fontWeight="regular">
+                        <Text variant="h6" color="black" fontWeight="bold" sx={{ display: 'inline' }}>Limites da Sala:</Text> As salas multiplayer suportam até 10 jogadores e um limite máximo de 100 perguntas por partida.
+                      </Text>
+                    }
+                  />
+                </ListItem>
+                <ListItem sx={{ display: 'list-item' }}>
+                  <ListItemText
+                    primary={
+                      <Text variant="h6" color="black" fontWeight="regular">
+                        <Text variant="h6" color="black" fontWeight="bold" sx={{ display: 'inline' }}>Entrando na Sala:</Text> Para participar, o jogador deve inserir o código de 6 letras gerado para o Host.
+                      </Text>
+                    }
+                  />
+                </ListItem>
+                <ListItem sx={{ display: 'list-item' }}>
+                  <ListItemText
+                    primary={
+                      <Text variant="h6" color="black" fontWeight="regular">
+                        <Text variant="h6" color="black" fontWeight="bold" sx={{ display: 'inline' }}>Bônus de Velocidade:</Text> Diferente do modo local, acertar uma pergunta te dá 100 pontos base + até 50 pontos de bônus, proporcionais à rapidez da sua resposta. Quem responde mais rápido, pontua mais!
+                      </Text>
+                    }
+                  />
+                </ListItem>
+              </List>
             </Box>
           </Paper>
         </Menu>
