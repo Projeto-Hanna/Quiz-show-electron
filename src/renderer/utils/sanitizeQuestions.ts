@@ -67,7 +67,9 @@ export const sanitizeQuestions = (input: unknown): Question[] => {
   }
 
   if (sanitized.length > 100) {
-    throw new Error('O número máximo permitido de perguntas por partida é 100.');
+    throw new Error(
+      'O número máximo permitido de perguntas por partida é 100.',
+    );
   }
 
   return sanitized;

@@ -185,6 +185,17 @@ export const PlayerRoom = () => {
       setPhase('FINISHED');
     };
 
+    const handleResetToLobby = (data: { summary: LobbySummary }) => {
+      setPhase('LOBBY');
+      setPlayers(data.summary.players);
+      setCurrentQuestion(null);
+      setSelectedOption(null);
+      setHasSubmitted(false);
+      setRoundResult(null);
+      setScoreboard([]);
+      setCountdownValue(3);
+    };
+
     const handleRoomClosed = (data: { reason?: string }) => {
       setRoomClosedMessage(data.reason || 'A sala foi encerrada pelo Host.');
     };
@@ -197,6 +208,7 @@ export const PlayerRoom = () => {
     socket.on('game:round_result', handleRoundResult);
     socket.on('game:scoreboard', handleScoreboard);
     socket.on('game:finished', handleFinished);
+    socket.on('game:reset_to_lobby', handleResetToLobby);
     socket.on('room:closed', handleRoomClosed);
 
     return () => {
@@ -208,6 +220,7 @@ export const PlayerRoom = () => {
       socket.off('game:round_result', handleRoundResult);
       socket.off('game:scoreboard', handleScoreboard);
       socket.off('game:finished', handleFinished);
+      socket.off('game:reset_to_lobby', handleResetToLobby);
       socket.off('room:closed', handleRoomClosed);
     };
   }, [roomId, navigate]);
@@ -492,7 +505,12 @@ export const PlayerRoom = () => {
             <Subtitle>
               Pergunta {currentQuestion.index + 1} de {currentQuestion.total}:
             </Subtitle>
-            <Typography variant="h3" sx={{ fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>{currentQuestion.question}</Typography>
+            <Typography
+              variant="h3"
+              sx={{ fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}
+            >
+              {currentQuestion.question}
+            </Typography>
           </Paper>
 
           {/* Waiting banner if already answered */}
@@ -647,7 +665,10 @@ export const PlayerRoom = () => {
             </Paper>
           )}
 
-          <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2, width: '100%' }}>
+          <Paper
+            elevation={4}
+            sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2, width: '100%' }}
+          >
             <TableContainer sx={{ overflowX: 'auto' }}>
               <Table>
                 <TableHead>
@@ -784,7 +805,17 @@ export const PlayerRoom = () => {
               ))}
             </Grid>
 
-            <Box mt={4}>
+            <Box mt={3}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                fontStyle="italic"
+              >
+                Aguardando o anfitrião reiniciar a partida...
+              </Typography>
+            </Box>
+
+            <Box mt={3}>
               <Button fitContent onClick={handleLeaveRoom}>
                 Voltar ao Menu Principal
               </Button>

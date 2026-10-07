@@ -166,7 +166,7 @@ export const PlayerJoin = () => {
                   <TextField
                     fullWidth
                     label="Código da Sala"
-                    placeholder="Ex: ABCD"
+                    placeholder="Ex: ABCDEF"
                     value={roomId}
                     disabled={isLoading}
                     onChange={(e) =>

@@ -27,6 +27,7 @@ import {
   CheckCircle2,
   Copy,
   Play,
+  RotateCcw,
   SkipForward,
   Trophy,
   Users,
@@ -195,6 +196,17 @@ export const HostDashboard = () => {
       setPhase('FINISHED');
     };
 
+    const handleResetToLobby = (data: { summary: LobbySummary }) => {
+      setPhase('LOBBY');
+      setPlayers(data.summary.players);
+      setCurrentQuestion(null);
+      setRoundResult(null);
+      setScoreboard([]);
+      setCountdownValue(3);
+      setAnsweredCount(0);
+      hasEndedRoundRef.current = false;
+    };
+
     socket.on('connect', handleConnect);
     socket.on('room:player_joined', handlePlayerJoined);
     socket.on('room:player_left', handlePlayerLeft);
@@ -204,6 +216,7 @@ export const HostDashboard = () => {
     socket.on('game:round_result', handleRoundResult);
     socket.on('game:scoreboard', handleScoreboard);
     socket.on('game:finished', handleFinished);
+    socket.on('game:reset_to_lobby', handleResetToLobby);
 
     return () => {
       socket.off('connect', handleConnect);
@@ -215,6 +228,7 @@ export const HostDashboard = () => {
       socket.off('game:round_result', handleRoundResult);
       socket.off('game:scoreboard', handleScoreboard);
       socket.off('game:finished', handleFinished);
+      socket.off('game:reset_to_lobby', handleResetToLobby);
     };
   }, [roomId]);
 
@@ -323,6 +337,20 @@ export const HostDashboard = () => {
     socket.emit('host:cancel_room', { roomId, hostToken });
     sessionStorage.removeItem('quiz_host_token');
     navigate('/multiplayer');
+  };
+
+  const handleRestartGame = () => {
+    const socket = getSocket();
+    const hostToken = sessionStorage.getItem('quiz_host_token');
+    socket.emit(
+      'host:restart_game',
+      { roomId, hostToken },
+      (res: { success: boolean; summary?: LobbySummary; error?: string }) => {
+        if (!res?.success) {
+          setErrorMessage(res?.error || 'Erro ao reiniciar partida.');
+        }
+      },
+    );
   };
 
   return (
@@ -633,7 +661,12 @@ export const HostDashboard = () => {
             <Subtitle>
               Pergunta {currentQuestion.index + 1} de {currentQuestion.total}:
             </Subtitle>
-            <Typography variant="h3" sx={{ fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>{currentQuestion.question}</Typography>
+            <Typography
+              variant="h3"
+              sx={{ fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}
+            >
+              {currentQuestion.question}
+            </Typography>
           </Paper>
 
           {/* Options (Host sees correct answer highlighted) */}
@@ -680,7 +713,10 @@ export const HostDashboard = () => {
         <Stack spacing={3} sx={{ width: '100%', maxWidth: '900px' }}>
           <Title variant="h3">Fim da Rodada!</Title>
 
-          <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2, width: '100%' }}>
+          <Paper
+            elevation={4}
+            sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2, width: '100%' }}
+          >
             <Subtitle>Resumo das Respostas dos Jogadores</Subtitle>
 
             <TableContainer sx={{ mt: 2, overflowX: 'auto' }}>
@@ -732,7 +768,13 @@ export const HostDashboard = () => {
               </Table>
             </TableContainer>
 
-            <Box display="flex" justifyContent="center" gap={2} mt={4} flexWrap="wrap">
+            <Box
+              display="flex"
+              justifyContent="center"
+              gap={2}
+              mt={4}
+              flexWrap="wrap"
+            >
               <Button
                 fitContent
                 icon={<Trophy size={20} />}
@@ -760,7 +802,10 @@ export const HostDashboard = () => {
         <Stack spacing={3} sx={{ width: '100%', maxWidth: '900px' }}>
           <Title variant="h3">Placar Geral</Title>
 
-          <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2, width: '100%' }}>
+          <Paper
+            elevation={4}
+            sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2, width: '100%' }}
+          >
             <TableContainer sx={{ overflowX: 'auto' }}>
               <Table>
                 <TableHead>
@@ -831,7 +876,13 @@ export const HostDashboard = () => {
               </Table>
             </TableContainer>
 
-            <Box display="flex" justifyContent="center" gap={2} mt={4} flexWrap="wrap">
+            <Box
+              display="flex"
+              justifyContent="center"
+              gap={2}
+              mt={4}
+              flexWrap="wrap"
+            >
               <Button
                 fitContent
                 icon={<SkipForward size={20} />}
@@ -970,11 +1021,25 @@ export const HostDashboard = () => {
               </Box>
             )}
 
-            <Box mt={4}>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={2}
+              justifyContent="center"
+              alignItems="center"
+              mt={4}
+            >
+              <Button
+                fitContent
+                onClick={handleRestartGame}
+                icon={<RotateCcw size={20} />}
+                inverted
+              >
+                Reiniciar Partida
+              </Button>
               <Button fitContent onClick={() => navigate('/')}>
                 Voltar ao Menu Principal
               </Button>
-            </Box>
+            </Stack>
           </Paper>
         </Stack>
       )}

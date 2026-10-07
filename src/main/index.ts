@@ -51,7 +51,7 @@ ipcMain.on('app:open-external', async (_event, url: string) => {
 
   try {
     await shell.openExternal(url);
-  } catch { }
+  } catch {}
 });
 
 Menu.setApplicationMenu(null);

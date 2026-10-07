@@ -148,7 +148,7 @@ export const Settings = () => {
                 onChange={handleMultiplayerAllAnsweredChange}
                 sx={{
                   flexDirection: { xs: 'column', sm: 'row' },
-                  gap: { xs: 1, },
+                  gap: { xs: 1 },
                 }}
               >
                 <FormControlLabel

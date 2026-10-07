@@ -138,7 +138,8 @@ export const HowToPlay = () => {
             >
               <Subtitle>Jogar uma partida (Modo Local)</Subtitle>
               <Text variant="h5">
-                Ao começar uma partida no modo local, o jogo funcionará da seguinte forma:
+                Ao começar uma partida no modo local, o jogo funcionará da
+                seguinte forma:
               </Text>
               <List sx={{ listStyleType: 'disc', padding: 0 }}>
                 <ListItem sx={{ display: 'list-item' }}>
@@ -204,8 +205,8 @@ export const HowToPlay = () => {
                           fontWeight="bold"
                           sx={{ display: 'inline' }}
                         >
-                          Ao acertar uma pergunta no modo local, você receberá 100 pontos fixos. Ao
-                          errar, receberá 0.
+                          Ao acertar uma pergunta no modo local, você receberá
+                          100 pontos fixos. Ao errar, receberá 0.
                         </Text>{' '}
                         Em ambos os casos, passará para a próxima pergunta, se
                         houver, ou para a tela de encerramento, se acabar a
@@ -256,7 +257,16 @@ export const HowToPlay = () => {
                   <ListItemText
                     primary={
                       <Text variant="h6" color="black" fontWeight="regular">
-                        <Text variant="h6" color="black" fontWeight="bold" sx={{ display: 'inline' }}>Limites da Sala:</Text> As salas multiplayer suportam até 10 jogadores e um limite máximo de 100 perguntas por partida.
+                        <Text
+                          variant="h6"
+                          color="black"
+                          fontWeight="bold"
+                          sx={{ display: 'inline' }}
+                        >
+                          Limites da Sala:
+                        </Text>{' '}
+                        As salas multiplayer suportam até 10 jogadores e um
+                        limite máximo de 100 perguntas por partida.
                       </Text>
                     }
                   />
@@ -265,7 +275,16 @@ export const HowToPlay = () => {
                   <ListItemText
                     primary={
                       <Text variant="h6" color="black" fontWeight="regular">
-                        <Text variant="h6" color="black" fontWeight="bold" sx={{ display: 'inline' }}>Entrando na Sala:</Text> Para participar, o jogador deve inserir o código de 6 letras gerado para o Host.
+                        <Text
+                          variant="h6"
+                          color="black"
+                          fontWeight="bold"
+                          sx={{ display: 'inline' }}
+                        >
+                          Entrando na Sala:
+                        </Text>{' '}
+                        Para participar, o jogador deve inserir o código de 6
+                        letras gerado para o Host.
                       </Text>
                     }
                   />
@@ -274,7 +293,18 @@ export const HowToPlay = () => {
                   <ListItemText
                     primary={
                       <Text variant="h6" color="black" fontWeight="regular">
-                        <Text variant="h6" color="black" fontWeight="bold" sx={{ display: 'inline' }}>Bônus de Velocidade:</Text> Diferente do modo local, acertar uma pergunta te dá 100 pontos base + até 50 pontos de bônus, proporcionais à rapidez da sua resposta. Quem responde mais rápido, pontua mais!
+                        <Text
+                          variant="h6"
+                          color="black"
+                          fontWeight="bold"
+                          sx={{ display: 'inline' }}
+                        >
+                          Bônus de Velocidade:
+                        </Text>{' '}
+                        Diferente do modo local, acertar uma pergunta te dá 100
+                        pontos base + até 50 pontos de bônus, proporcionais à
+                        rapidez da sua resposta. Quem responde mais rápido,
+                        pontua mais!
                       </Text>
                     }
                   />
