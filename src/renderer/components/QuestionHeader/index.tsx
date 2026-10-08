@@ -46,9 +46,9 @@ export const QuestionHeader = ({
         >
           <Trophy size={32} />
           {totalScore !== undefined ? (
-            <Subtitle>{totalScore} pontos</Subtitle>
+            <Subtitle sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem', md: '2.125rem' }, textAlign: 'center' }}>{totalScore} pontos</Subtitle>
           ) : (
-            <Subtitle>
+            <Subtitle sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem', md: '2.125rem' }, textAlign: 'center' }}>
               Pergunta {currentQuestionIndex + 1} de {totalQuestions}
             </Subtitle>
           )}
@@ -65,7 +65,7 @@ export const QuestionHeader = ({
               justifyContent="center"
             >
               <Users size={28} color="#ff0a69" />
-              <Subtitle>
+              <Subtitle sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem', md: '2.125rem' }, textAlign: 'center' }}>
                 {answeredCount} de {playersCount} responderam
               </Subtitle>
             </Stack>
@@ -102,7 +102,7 @@ export const QuestionHeader = ({
             justifyContent="center"
           >
             <AlarmClock size={32} />
-            <Subtitle>{remainingTime} segundos restantes</Subtitle>
+            <Subtitle sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem', md: '2.125rem' }, textAlign: 'center' }}>{remainingTime} segundos restantes</Subtitle>
           </Stack>
           <LinearProgress
             variant="determinate"

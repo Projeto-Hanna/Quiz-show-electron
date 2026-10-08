@@ -45,7 +45,7 @@ export const VictoryScreen = (props: Props) => {
                     alignItems="start"
                     gap="6px"
                   >
-                    <Subtitle textAlign="left">
+                    <Subtitle textAlign="left" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' } }}>
                       {index + 1}. {question.question}
                     </Subtitle>
                     <Text

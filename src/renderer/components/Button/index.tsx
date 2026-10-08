@@ -24,6 +24,8 @@ const StyledButton = styled(MUIButton)<ButtonProps>(({ theme }) => ({
   borderImage: 'linear-gradient(135deg,#e42c2c, #ff0a69, #51bddf, #afe1f1)',
   borderImageSlice: 1,
   transition: 'all 0.3s ease',
+  whiteSpace: 'normal',
+  wordBreak: 'break-word',
 }));
 
 const smallButtonSx = {

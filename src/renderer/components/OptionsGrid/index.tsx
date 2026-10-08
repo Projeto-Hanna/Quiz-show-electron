@@ -29,13 +29,13 @@ export const OptionsGrid = ({
         const isSelected = selectedOption === index;
         const isCorrect = correctAnswer === index;
         const shouldCenterLastOption =
-          options.length % 2 && index === options.length - 1;
+          options.length % 2 !== 0 && index === options.length - 1;
 
         return (
           <Grid
             key={`option-${index}`}
             size={{ xs: 12, sm: 6 }}
-            offset={{ xs: 0, sm: shouldCenterLastOption ? 3 : 0 }}
+            {...(shouldCenterLastOption ? { offset: { sm: 3 } } : {})}
           >
             <div aria-label={`Resposta ${getOptionLetter(index)} ${option}`}>
               <Button
@@ -46,7 +46,7 @@ export const OptionsGrid = ({
               >
                 <>
                   {getOptionLetter(index)} {option}
-                  {isCorrect ? ' ✓ (Correta)' : ''}
+                  {isCorrect ? ' (Correta)' : ''}
                 </>
               </Button>
             </div>
