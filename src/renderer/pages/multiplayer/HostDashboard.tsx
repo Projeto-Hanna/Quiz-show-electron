@@ -10,7 +10,6 @@ import {
   DialogContent,
   DialogTitle,
   Grid,
-  LinearProgress,
   Paper,
   Stack,
   Table,
@@ -22,7 +21,6 @@ import {
   Typography,
 } from '@mui/material';
 import {
-  AlarmClock,
   ArrowLeft,
   CheckCircle2,
   Copy,
@@ -34,7 +32,16 @@ import {
   XCircle,
 } from 'lucide-react';
 
-import { Button, Subtitle, Text, Title } from '../../components';
+import {
+  Button,
+  Subtitle,
+  Text,
+  Title,
+  CountdownScreen,
+  QuestionHeader,
+  OptionsGrid,
+  ScoreboardTable,
+} from '../../components';
 import { getSocket } from '../../services/socket';
 import { useSettings } from '../../context/useSettings';
 import type {
@@ -53,12 +60,6 @@ type HostPhase =
   | 'SCOREBOARD'
   | 'FINISHED';
 
-const getOptionLetter = (index: number): string => {
-  const startingLetter = 'A';
-  const startingLetterCode = startingLetter.charCodeAt(0);
-  return `${String.fromCharCode(startingLetterCode + index)})`;
-};
-
 export const HostDashboard = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
@@ -74,6 +75,7 @@ export const HostDashboard = () => {
   const [scoreboard, setScoreboard] = useState<ScoreboardEntry[]>([]);
   const [copiedNotification, setCopiedNotification] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);
 
   const { settings } = useSettings();
   const allAnsweredBehaviorRef = useRef(
@@ -159,6 +161,7 @@ export const HostDashboard = () => {
       setAnsweredCount(0);
       setRemainingTime(data.question.timeLimit || 15);
       hasEndedRoundRef.current = false;
+      setIsAnswerRevealed(false);
       setPhase('QUESTION');
     };
 
@@ -511,43 +514,7 @@ export const HostDashboard = () => {
 
       {/* --- PHASE 2: COUNTDOWN --- */}
       {phase === 'COUNTDOWN' && (
-        <Box
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          gap={2}
-          flexDirection="column"
-          sx={{ minHeight: '60vh' }}
-        >
-          <Title variant="h2">PREPAREM-SE!</Title>
-          <Typography
-            key={countdownValue}
-            variant="h1"
-            fontWeight={900}
-            sx={{
-              fontFamily: 'Anton, sans-serif',
-              fontSize: 'clamp(80px, 20vw, 200px)',
-              color: 'white',
-              textShadow: '4px 4px 8px rgba(0,0,0,0.4)',
-              animation: 'countdownPulse 0.8s ease-out',
-              '@keyframes countdownPulse': {
-                '0%': {
-                  transform: 'scale(1.6)',
-                  opacity: 0,
-                },
-                '50%': {
-                  opacity: 1,
-                },
-                '100%': {
-                  transform: 'scale(1)',
-                  opacity: 1,
-                },
-              },
-            }}
-          >
-            {countdownValue > 0 ? countdownValue : 'VAI!'}
-          </Typography>
-        </Box>
+        <CountdownScreen countdownValue={countdownValue} />
       )}
 
       {/* --- PHASE 3: QUESTION --- */}
@@ -560,91 +527,14 @@ export const HostDashboard = () => {
           flexDirection="column"
           sx={{ width: '100%', maxWidth: '1000px' }}
         >
-          {/* Top Bar matching GameInstance */}
-          <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            spacing={{ xs: 2, md: 3 }}
-            justifyContent="center"
-            alignItems="center"
-            width="100%"
-          >
-            <Paper elevation={3} sx={{ padding: 2, flex: 1, width: '100%' }}>
-              <Stack
-                direction="row"
-                spacing={1}
-                alignItems="center"
-                justifyContent="center"
-              >
-                <Trophy size={32} />
-                <Subtitle>
-                  Pergunta {currentQuestion.index + 1} de{' '}
-                  {currentQuestion.total}
-                </Subtitle>
-              </Stack>
-            </Paper>
-
-            <Paper elevation={3} sx={{ padding: 2, flex: 1, width: '100%' }}>
-              <Stack spacing={1}>
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  <Users size={28} color="#ff0a69" />
-                  <Subtitle>
-                    {answeredCount} de {players.length} responderam
-                  </Subtitle>
-                </Stack>
-                <LinearProgress
-                  variant="determinate"
-                  value={
-                    players.length > 0
-                      ? (answeredCount / players.length) * 100
-                      : 0
-                  }
-                  sx={{
-                    height: 8,
-                    borderRadius: 4,
-                    bgcolor: 'rgba(0,0,0,0.08)',
-                    '& .MuiLinearProgress-bar': {
-                      bgcolor: '#51bddf',
-                    },
-                  }}
-                />
-              </Stack>
-            </Paper>
-
-            <Paper elevation={3} sx={{ padding: 2, flex: 1, width: '100%' }}>
-              <Stack spacing={1}>
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  <AlarmClock size={32} />
-                  <Subtitle>{remainingTime} segundos restantes</Subtitle>
-                </Stack>
-                <LinearProgress
-                  variant="determinate"
-                  value={
-                    currentQuestion.timeLimit > 0
-                      ? (remainingTime / currentQuestion.timeLimit) * 100
-                      : 0
-                  }
-                  sx={{
-                    height: 8,
-                    borderRadius: 4,
-                    bgcolor: 'rgba(0,0,0,0.08)',
-                    '& .MuiLinearProgress-bar': {
-                      bgcolor: remainingTime <= 5 ? '#d32f2f' : '#ff0a69',
-                    },
-                  }}
-                />
-              </Stack>
-            </Paper>
-          </Stack>
+          <QuestionHeader
+            currentQuestionIndex={currentQuestion.index}
+            totalQuestions={currentQuestion.total}
+            remainingTime={remainingTime}
+            timeLimit={currentQuestion.timeLimit}
+            answeredCount={answeredCount}
+            playersCount={players.length}
+          />
 
           {/* Question Text */}
           <Paper
@@ -669,33 +559,22 @@ export const HostDashboard = () => {
             </Typography>
           </Paper>
 
-          {/* Options (Host sees correct answer highlighted) */}
-          <Grid container spacing={3} width="100%">
-            {currentQuestion.options.map((opt, idx) => {
-              const isCorrect = idx === currentQuestion.answer;
-              const shouldCenterLastOption =
-                currentQuestion.options.length % 2 &&
-                idx === currentQuestion.options.length - 1;
-
-              return (
-                <Grid
-                  key={`host-opt-${idx}`}
-                  size={{ xs: 12, sm: 6 }}
-                  offset={{ xs: 0, sm: shouldCenterLastOption ? 3 : 0 }}
-                >
-                  <Button disabled isCorrect={isCorrect}>
-                    <>
-                      {getOptionLetter(idx)} {opt}
-                      {isCorrect ? ' ✓ (Correta)' : ''}
-                    </>
-                  </Button>
-                </Grid>
-              );
-            })}
-          </Grid>
+          <OptionsGrid
+            options={currentQuestion.options}
+            correctAnswer={isAnswerRevealed ? currentQuestion.answer : undefined}
+            disabled={true}
+          />
 
           {/* Control Bar for Host */}
           <Box display="flex" justifyContent="center" gap={2} pt={1}>
+            <Button
+              fitContent
+              size="small"
+              onClick={() => setIsAnswerRevealed((prev) => !prev)}
+              inverted={isAnswerRevealed}
+            >
+              {isAnswerRevealed ? 'Ocultar Resposta' : 'Revelar Resposta'}
+            </Button>
             <Button
               fitContent
               size="small"
@@ -806,75 +685,7 @@ export const HostDashboard = () => {
             elevation={4}
             sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2, width: '100%' }}
           >
-            <TableContainer sx={{ overflowX: 'auto' }}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell width={80}>
-                      <strong>Posição</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Nome</strong>
-                    </TableCell>
-                    <TableCell align="right">
-                      <strong>Pontos</strong>
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {scoreboard.map((entry) => {
-                    const isTop3 = entry.rank <= 3;
-                    const badgeColor =
-                      entry.rank === 1
-                        ? '#ffd700'
-                        : entry.rank === 2
-                          ? '#c0c0c0'
-                          : entry.rank === 3
-                            ? '#cd7f32'
-                            : 'transparent';
-                    return (
-                      <TableRow
-                        key={entry.id}
-                        sx={{
-                          bgcolor: isTop3
-                            ? 'rgba(255, 10, 105, 0.05)'
-                            : 'transparent',
-                        }}
-                      >
-                        <TableCell>
-                          <Avatar
-                            sx={{
-                              bgcolor: isTop3 ? badgeColor : '#e0e0e0',
-                              color: isTop3 ? '#000' : '#666',
-                              fontWeight: 'bold',
-                            }}
-                          >
-                            {entry.rank}
-                          </Avatar>
-                        </TableCell>
-                        <TableCell>
-                          <Typography
-                            variant="h6"
-                            fontWeight={isTop3 ? 'bold' : 'normal'}
-                          >
-                            {entry.name}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Typography
-                            variant="h6"
-                            fontWeight="bold"
-                            color="#ff0a69"
-                          >
-                            {entry.score} pts
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            <ScoreboardTable scoreboard={scoreboard} />
 
             <Box
               display="flex"

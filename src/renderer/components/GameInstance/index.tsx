@@ -1,20 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlarmClock, Play, Trophy } from 'lucide-react';
-import {
-  Box,
-  Grid,
-  LinearProgress,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Play } from 'lucide-react';
+import { Box, Paper, Stack, Typography } from '@mui/material';
 
 import type { Question, UserAnswer } from '../../types';
 import { VictoryScreen } from '../VictoryScreen';
 import { useSettings } from '../../context/useSettings';
-import { Button } from '../Button';
 import { Subtitle } from '../Subtitle';
 import { Title } from '../Title';
+import { CountdownScreen, QuestionHeader, OptionsGrid, Button } from '../';
 
 type Props = {
   questions: Question[];
@@ -25,12 +18,6 @@ type GamePhase = 'waiting' | 'countdown' | 'playing';
 
 const POINTS_PER_ANSWER = 100;
 const COUNTDOWN_START = 3;
-
-const getOptionLetter = (index: number): string => {
-  const startingLetter = 'A';
-  const startingLetterCode = startingLetter.charCodeAt(0);
-  return `${String.fromCharCode(startingLetterCode + index)})`;
-};
 
 export const GameInstance = (props: Props) => {
   const { questions, timePerQuestionInSeconds: customTime } = props;
@@ -202,45 +189,7 @@ export const GameInstance = (props: Props) => {
 
   // --- Countdown screen ---
   if (gamePhase === 'countdown') {
-    const displayValue = countdownValue > 0 ? countdownValue : 'VAI!';
-
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        flexDirection="column"
-        sx={{ minHeight: '60vh' }}
-      >
-        <Typography
-          key={countdownValue}
-          variant="h1"
-          fontWeight={900}
-          sx={{
-            fontFamily: 'Anton, sans-serif',
-            fontSize: 'clamp(80px, 20vw, 200px)',
-            color: 'white',
-            textShadow: '4px 4px 8px rgba(0,0,0,0.4)',
-            animation: 'countdownPulse 0.8s ease-out',
-            '@keyframes countdownPulse': {
-              '0%': {
-                transform: 'scale(1.6)',
-                opacity: 0,
-              },
-              '50%': {
-                opacity: 1,
-              },
-              '100%': {
-                transform: 'scale(1)',
-                opacity: 1,
-              },
-            },
-          }}
-        >
-          {displayValue}
-        </Typography>
-      </Box>
-    );
+    return <CountdownScreen countdownValue={countdownValue} />;
   }
 
   // --- Playing phase ---
@@ -252,53 +201,13 @@ export const GameInstance = (props: Props) => {
       gap={6}
       flexDirection="column"
     >
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        spacing={{ xs: 2, sm: 6 }}
-        justifyContent="center"
-        alignItems="center"
-        width="100%"
-      >
-        <Paper elevation={3} sx={{ padding: 2 }}>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Trophy size={32} />
-            <Subtitle>{totalScore} pontos</Subtitle>
-          </Stack>
-        </Paper>
-
-        <Paper
-          elevation={3}
-          sx={{ padding: 2, minWidth: { xs: '100%', sm: 280 } }}
-        >
-          <Stack spacing={1}>
-            <Stack
-              direction="row"
-              spacing={1}
-              alignItems="center"
-              justifyContent="center"
-            >
-              <AlarmClock size={32} />
-              <Subtitle>{questionTimer} segundos restantes</Subtitle>
-            </Stack>
-            <LinearProgress
-              variant="determinate"
-              value={
-                timePerQuestionInSeconds > 0
-                  ? (questionTimer / timePerQuestionInSeconds) * 100
-                  : 0
-              }
-              sx={{
-                height: 8,
-                borderRadius: 4,
-                bgcolor: 'rgba(0,0,0,0.08)',
-                '& .MuiLinearProgress-bar': {
-                  bgcolor: questionTimer <= 5 ? '#d32f2f' : '#ff0a69',
-                },
-              }}
-            />
-          </Stack>
-        </Paper>
-      </Stack>
+      <QuestionHeader
+        currentQuestionIndex={currentIndex}
+        totalQuestions={questions.length}
+        remainingTime={questionTimer}
+        timeLimit={timePerQuestionInSeconds}
+        totalScore={totalScore}
+      />
 
       <Paper
         elevation={3}
@@ -315,29 +224,10 @@ export const GameInstance = (props: Props) => {
         <Typography variant="h3">{currentQuestion.question}</Typography>
       </Paper>
 
-      <Grid container spacing={4}>
-        {currentQuestion.options.map((option, index) => {
-          const shouldCenterLastOption =
-            currentQuestion.options.length % 2 &&
-            index === currentQuestion.options.length - 1;
-
-          return (
-            <Grid
-              key={`game-option-${index}`}
-              size={{ xs: 12, sm: 6 }}
-              offset={{ xs: 0, sm: shouldCenterLastOption ? 3 : 0 }}
-            >
-              <div aria-label={`Resposta ${getOptionLetter(index)}: ${option}`}>
-                <Button onClick={() => proceedToNextQuestion(index)}>
-                  <>
-                    {getOptionLetter(index)} {option}
-                  </>
-                </Button>
-              </div>
-            </Grid>
-          );
-        })}
-      </Grid>
+      <OptionsGrid
+        options={currentQuestion.options}
+        onSelect={proceedToNextQuestion}
+      />
     </Box>
   );
 };

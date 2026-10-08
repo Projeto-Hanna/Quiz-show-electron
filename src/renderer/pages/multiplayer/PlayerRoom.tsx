@@ -11,27 +11,22 @@ import {
   DialogContent,
   DialogTitle,
   Grid,
-  LinearProgress,
   Paper,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Typography,
 } from '@mui/material';
-import {
-  AlarmClock,
-  CheckCircle2,
-  Hourglass,
-  Trophy,
-  Users,
-  XCircle,
-} from 'lucide-react';
+import { CheckCircle2, Hourglass, Users, XCircle } from 'lucide-react';
 
-import { Button, Subtitle, Text, Title } from '../../components';
+import {
+  Button,
+  Subtitle,
+  Text,
+  Title,
+  CountdownScreen,
+  QuestionHeader,
+  OptionsGrid,
+  ScoreboardTable,
+} from '../../components';
 import { getSocket } from '../../services/socket';
 import type {
   LobbySummary,
@@ -48,12 +43,6 @@ type PlayerPhase =
   | 'ROUND_RESULT'
   | 'SCOREBOARD'
   | 'FINISHED';
-
-const getOptionLetter = (index: number): string => {
-  const startingLetter = 'A';
-  const startingLetterCode = startingLetter.charCodeAt(0);
-  return `${String.fromCharCode(startingLetterCode + index)})`;
-};
 
 export const PlayerRoom = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -322,9 +311,9 @@ export const PlayerRoom = () => {
                 <Typography variant="body1" color="text.secondary">
                   Você está jogando como:
                 </Typography>
-                <Typography variant="h4" fontWeight="bold" color="#ff0a69">
+                <Title variant="h3" sx={{ color: '#ff0a69', WebkitTextFillColor: '#ff0a69', textShadow: '2px 2px 0px rgba(0,0,0,0.2)' }}>
                   {playerName}
-                </Typography>
+                </Title>
               </Box>
 
               <Chip
@@ -389,43 +378,7 @@ export const PlayerRoom = () => {
 
       {/* --- PHASE 2: COUNTDOWN --- */}
       {phase === 'COUNTDOWN' && (
-        <Box
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          gap={2}
-          flexDirection="column"
-          sx={{ minHeight: '60vh' }}
-        >
-          <Title variant="h2">PREPARE-SE!</Title>
-          <Typography
-            key={countdownValue}
-            variant="h1"
-            fontWeight={900}
-            sx={{
-              fontFamily: 'Anton, sans-serif',
-              fontSize: 'clamp(80px, 20vw, 200px)',
-              color: 'white',
-              textShadow: '4px 4px 8px rgba(0,0,0,0.4)',
-              animation: 'countdownPulse 0.8s ease-out',
-              '@keyframes countdownPulse': {
-                '0%': {
-                  transform: 'scale(1.6)',
-                  opacity: 0,
-                },
-                '50%': {
-                  opacity: 1,
-                },
-                '100%': {
-                  transform: 'scale(1)',
-                  opacity: 1,
-                },
-              },
-            }}
-          >
-            {countdownValue > 0 ? countdownValue : 'VAI!'}
-          </Typography>
-        </Box>
+        <CountdownScreen countdownValue={countdownValue} />
       )}
 
       {/* --- PHASE 3: QUESTION --- */}
@@ -439,56 +392,12 @@ export const PlayerRoom = () => {
           sx={{ width: '100%', maxWidth: '950px' }}
         >
           {/* Top Bar matching GameInstance */}
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={{ xs: 2, sm: 6 }}
-            justifyContent="center"
-            alignItems="center"
-            width="100%"
-          >
-            <Paper elevation={3} sx={{ padding: 2 }}>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Trophy size={32} />
-                <Subtitle>
-                  Pergunta {currentQuestion.index + 1} de{' '}
-                  {currentQuestion.total}
-                </Subtitle>
-              </Stack>
-            </Paper>
-
-            <Paper
-              elevation={3}
-              sx={{ padding: 2, minWidth: { xs: '100%', sm: 280 } }}
-            >
-              <Stack spacing={1}>
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  <AlarmClock size={32} />
-                  <Subtitle>{remainingTime} segundos restantes</Subtitle>
-                </Stack>
-                <LinearProgress
-                  variant="determinate"
-                  value={
-                    currentQuestion.timeLimit > 0
-                      ? (remainingTime / currentQuestion.timeLimit) * 100
-                      : 0
-                  }
-                  sx={{
-                    height: 8,
-                    borderRadius: 4,
-                    bgcolor: 'rgba(0,0,0,0.08)',
-                    '& .MuiLinearProgress-bar': {
-                      bgcolor: remainingTime <= 5 ? '#d32f2f' : '#ff0a69',
-                    },
-                  }}
-                />
-              </Stack>
-            </Paper>
-          </Stack>
+          <QuestionHeader
+            currentQuestionIndex={currentQuestion.index}
+            totalQuestions={currentQuestion.total}
+            remainingTime={remainingTime}
+            timeLimit={currentQuestion.timeLimit}
+          />
 
           {/* Question Text */}
           <Paper
@@ -540,36 +449,12 @@ export const PlayerRoom = () => {
           )}
 
           {/* Option Buttons */}
-          <Grid container spacing={3} width="100%">
-            {currentQuestion.options.map((option, index) => {
-              const isSelected = selectedOption === index;
-              const shouldCenterLastOption =
-                currentQuestion.options.length % 2 &&
-                index === currentQuestion.options.length - 1;
-
-              return (
-                <Grid
-                  key={`player-option-${index}`}
-                  size={{ xs: 12, sm: 6 }}
-                  offset={{ xs: 0, sm: shouldCenterLastOption ? 3 : 0 }}
-                >
-                  <div
-                    aria-label={`Resposta ${getOptionLetter(index)} ${option}`}
-                  >
-                    <Button
-                      selected={isSelected}
-                      disabled={hasSubmitted || remainingTime <= 0}
-                      onClick={() => handleSelectOption(index)}
-                    >
-                      <>
-                        {getOptionLetter(index)} {option}
-                      </>
-                    </Button>
-                  </div>
-                </Grid>
-              );
-            })}
-          </Grid>
+          <OptionsGrid
+            options={currentQuestion.options}
+            disabled={hasSubmitted || remainingTime <= 0}
+            onSelect={handleSelectOption}
+            selectedOption={selectedOption}
+          />
         </Box>
       )}
 
@@ -589,9 +474,9 @@ export const PlayerRoom = () => {
               myResult.isCorrect ? (
                 <Stack spacing={2} alignItems="center">
                   <CheckCircle2 color="#2e7d32" size={72} />
-                  <Typography variant="h4" fontWeight="bold" color="#2e7d32">
+                  <Title variant="h3" sx={{ color: '#2e7d32', WebkitTextFillColor: '#2e7d32', textShadow: '2px 2px 0px rgba(0,0,0,0.2)' }}>
                     Você Acertou!
-                  </Typography>
+                  </Title>
                   <Chip
                     label={`+${myResult.pointsEarned} pontos`}
                     color="success"
@@ -610,11 +495,11 @@ export const PlayerRoom = () => {
               ) : (
                 <Stack spacing={2} alignItems="center">
                   <XCircle color="#d32f2f" size={72} />
-                  <Typography variant="h4" fontWeight="bold" color="#d32f2f">
+                  <Title variant="h3" sx={{ color: '#d32f2f', WebkitTextFillColor: '#d32f2f', textShadow: '2px 2px 0px rgba(0,0,0,0.2)' }}>
                     {selectedOption === null
                       ? 'Tempo Esgotado!'
                       : 'Que Pena, Você Errou!'}
-                  </Typography>
+                  </Title>
                   <Typography variant="h6" color="text.secondary">
                     {selectedOption === null
                       ? 'Você não selecionou nenhuma resposta a tempo.'
@@ -658,9 +543,11 @@ export const PlayerRoom = () => {
                 textAlign: 'center',
               }}
             >
-              <Typography variant="h5" fontWeight="bold" color="#ff0a69">
-                Sua Posição: {myScoreEntry.rank}º Lugar com {myScoreEntry.score}{' '}
-                pontos!
+              <Title variant="h4" sx={{ color: '#ff0a69', WebkitTextFillColor: '#ff0a69', textShadow: '2px 2px 0px rgba(0,0,0,0.1)' }}>
+                Sua Posição: {myScoreEntry.rank}º Lugar
+              </Title>
+              <Typography variant="h6" fontWeight="bold" color="#ff0a69" mt={1}>
+                com {myScoreEntry.score} pontos!
               </Typography>
             </Paper>
           )}
@@ -669,67 +556,7 @@ export const PlayerRoom = () => {
             elevation={4}
             sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2, width: '100%' }}
           >
-            <TableContainer sx={{ overflowX: 'auto' }}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell width={80}>
-                      <strong>Posição</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Jogador</strong>
-                    </TableCell>
-                    <TableCell align="right">
-                      <strong>Pontuação</strong>
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {scoreboard.map((entry) => {
-                    const isMe = entry.id === playerId;
-                    return (
-                      <TableRow
-                        key={entry.id}
-                        sx={{
-                          bgcolor: isMe
-                            ? 'rgba(255, 10, 105, 0.12)'
-                            : 'transparent',
-                          fontWeight: isMe ? 'bold' : 'normal',
-                        }}
-                      >
-                        <TableCell>
-                          <Avatar
-                            sx={{
-                              bgcolor: isMe ? '#ff0a69' : '#e0e0e0',
-                              color: isMe ? '#fff' : '#444',
-                            }}
-                          >
-                            {entry.rank}
-                          </Avatar>
-                        </TableCell>
-                        <TableCell>
-                          <Typography
-                            variant="h6"
-                            fontWeight={isMe ? 'bold' : 'normal'}
-                          >
-                            {entry.name} {isMe && '(Você)'}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Typography
-                            variant="h6"
-                            fontWeight="bold"
-                            color="#ff0a69"
-                          >
-                            {entry.score} pts
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            <ScoreboardTable scoreboard={scoreboard} playerId={playerId} />
 
             <Box mt={3} textAlign="center">
               <Stack
@@ -762,9 +589,9 @@ export const PlayerRoom = () => {
           >
             {myScoreEntry && (
               <Box mb={4}>
-                <Typography variant="h4" fontWeight="bold" color="#ff0a69">
+                <Title variant="h3" sx={{ color: '#ff0a69', WebkitTextFillColor: '#ff0a69', textShadow: '2px 2px 0px rgba(0,0,0,0.2)' }}>
                   Você terminou em {myScoreEntry.rank}º Lugar!
-                </Typography>
+                </Title>
                 <Typography variant="h5" color="text.secondary">
                   Total de {myScoreEntry.score} pontos acumulados.
                 </Typography>
