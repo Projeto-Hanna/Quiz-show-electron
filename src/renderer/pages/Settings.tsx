@@ -243,47 +243,37 @@ export const Settings = () => {
                       backend na nuvem (ex: Render, Railway, AWS), insira a URL aqui.
                     </Text>
                     <Box mt={2}>
-                      <input
-                        type="text"
-                        disabled={!!import.meta.env.VITE_SERVER_URL}
-                        defaultValue={
-                          import.meta.env.VITE_SERVER_URL ||
-                          localStorage.getItem('quiz_server_url') ||
-                          ''
-                        }
-                        placeholder="Padrão: http://localhost:3001"
-                        onChange={(e) => {
-                          if (import.meta.env.VITE_SERVER_URL) return;
-                          const val = e.target.value.trim();
-                          if (val) {
-                            localStorage.setItem('quiz_server_url', val);
-                          } else {
-                            localStorage.removeItem('quiz_server_url');
-                          }
-                        }}
-                        style={{
-                          width: '100%',
-                          padding: '10px 14px',
-                          fontSize: '1rem',
-                          borderRadius: '6px',
-                          border: '1px solid #ccc',
-                          boxSizing: 'border-box',
-                          backgroundColor: import.meta.env.VITE_SERVER_URL
-                            ? '#f5f5f5'
-                            : 'white',
-                          color: import.meta.env.VITE_SERVER_URL
-                            ? '#888'
-                            : 'inherit',
-                          cursor: import.meta.env.VITE_SERVER_URL
-                            ? 'not-allowed'
-                            : 'text',
-                        }}
-                      />
-                      {!!import.meta.env.VITE_SERVER_URL && (
-                        <Text variant="body2" color="error" sx={{ mt: 1 }}>
+                      {!!import.meta.env.VITE_SERVER_URL ? (
+                        <Text variant="body1" color="error" fontWeight="bold">
                           A URL oficial do servidor está fixada via variável de
                           ambiente e não pode ser alterada.
                         </Text>
+                      ) : (
+                        <input
+                          type="text"
+                          defaultValue={
+                            localStorage.getItem('quiz_server_url') || ''
+                          }
+                          placeholder="Padrão: http://localhost:3001"
+                          onChange={(e) => {
+                            const val = e.target.value.trim();
+                            if (val) {
+                              localStorage.setItem('quiz_server_url', val);
+                            } else {
+                              localStorage.removeItem('quiz_server_url');
+                            }
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '10px 14px',
+                            fontSize: '1rem',
+                            borderRadius: '6px',
+                            border: '1px solid #ccc',
+                            boxSizing: 'border-box',
+                            backgroundColor: 'white',
+                            color: 'inherit',
+                          }}
+                        />
                       )}
                     </Box>
                   </Paper>
