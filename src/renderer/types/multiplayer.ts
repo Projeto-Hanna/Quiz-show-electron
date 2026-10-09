@@ -52,6 +52,7 @@ export type RoundResult = {
     name: string;
     answered: boolean;
     isCorrect: boolean;
+    optionIndex: number | null;
     pointsEarned: number;
     totalScore: number;
   }[];

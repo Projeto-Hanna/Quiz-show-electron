@@ -8,7 +8,7 @@ let currentServerStatus: ServerStatus = 'idle';
 const statusListeners = new Set<(status: ServerStatus) => void>();
 let activeWakePromise: Promise<boolean> | null = null;
 
-export const getDefaultServerUrl = (): string => {
+export const getServerUrl = (overrideUrl?: string): string => {
   if (import.meta.env.VITE_SERVER_URL) {
     return import.meta.env.VITE_SERVER_URL;
   }
@@ -17,15 +17,12 @@ export const getDefaultServerUrl = (): string => {
     typeof window !== 'undefined' && window.location.hostname
       ? window.location.hostname
       : 'localhost';
+  const defaultUrl = `http://${host}:3001`;
 
-  return `http://${host}:3001`;
-};
-
-export const getServerUrl = (overrideUrl?: string): string => {
   return (
     overrideUrl ||
     localStorage.getItem('quiz_server_url') ||
-    getDefaultServerUrl()
+    defaultUrl
   );
 };
 

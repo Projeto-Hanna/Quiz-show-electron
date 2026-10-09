@@ -15,3 +15,4 @@ export * from './CountdownScreen';
 export * from './QuestionHeader';
 export * from './OptionsGrid';
 export * from './ScoreboardTable';
+export * from './MaxPlayersSelector';

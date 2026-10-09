@@ -20,6 +20,7 @@ import {
   Title,
   QuestionSourceSelector,
   TimePerQuestionSelector,
+  MaxPlayersSelector,
   ServerStatusBadge,
 } from '../../components';
 import { getSocket } from '../../services/socket';
@@ -35,6 +36,7 @@ export const HostCreate = () => {
   const [timePerQuestion, setTimePerQuestion] = useState<number>(
     settings.timePerQuestionInSeconds,
   );
+  const [maxPlayers, setMaxPlayers] = useState<number>(10);
   const [isCreating, setIsCreating] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState<string>('');
@@ -83,14 +85,13 @@ export const HostCreate = () => {
 
     socket.emit(
       'host:create_room',
-      { questions, timePerQuestion },
+      { questions, timePerQuestion, maxPlayers },
       (response: {
         success: boolean;
         roomId?: string;
         hostToken?: string;
         error?: string;
       }) => {
-        // Se a criação foi cancelada manualmente ou deu timeout, descarta a resposta
         if (isAbortedRef.current) {
           return;
         }
@@ -209,8 +210,8 @@ export const HostCreate = () => {
           <Stack spacing={3} sx={{ width: '100%', maxWidth: '900px' }}>
             <Title variant="h3">Criar Sala Multiplayer (Host)</Title>
             <Text variant="h6" color="white" textAlign="center">
-              Você será o apresentador da partida. Até 10 jogadores poderão se
-              conectar pelo código de convite!
+              Você será o apresentador da partida. Até {maxPlayers} jogadores
+              poderão se conectar pelo código de convite!
             </Text>
 
             <Box display="flex" justifyContent="center">
@@ -228,6 +229,12 @@ export const HostCreate = () => {
             <TimePerQuestionSelector
               value={timePerQuestion}
               onChange={setTimePerQuestion}
+              disabled={isCreating}
+            />
+
+            <MaxPlayersSelector
+              value={maxPlayers}
+              onChange={setMaxPlayers}
               disabled={isCreating}
             />
 

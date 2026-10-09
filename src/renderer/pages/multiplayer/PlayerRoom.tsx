@@ -58,6 +58,7 @@ export const PlayerRoom = () => {
   const [phase, setPhase] = useState<PlayerPhase>('LOBBY');
   const [countdownValue, setCountdownValue] = useState<number>(3);
   const [players, setPlayers] = useState<MultiplayerPlayer[]>([]);
+  const [maxPlayers, setMaxPlayers] = useState<number>(10);
   const [currentQuestion, setCurrentQuestion] =
     useState<MultiplayerQuestion | null>(null);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -108,6 +109,9 @@ export const PlayerRoom = () => {
             }
             if (res.summary) {
               setPlayers(res.summary.players);
+              if (res.summary.maxPlayers) {
+                setMaxPlayers(res.summary.maxPlayers);
+              }
               if (res.summary.status === 'LOBBY') {
                 setPhase('LOBBY');
               }
@@ -140,10 +144,16 @@ export const PlayerRoom = () => {
 
     const handlePlayerJoined = (data: { summary: LobbySummary }) => {
       setPlayers(data.summary.players);
+      if (data.summary?.maxPlayers) {
+        setMaxPlayers(data.summary.maxPlayers);
+      }
     };
 
     const handlePlayerLeft = (data: { summary: LobbySummary }) => {
       setPlayers(data.summary.players);
+      if (data.summary?.maxPlayers) {
+        setMaxPlayers(data.summary.maxPlayers);
+      }
     };
 
     const handleCountdown = (data?: { seconds?: number }) => {
@@ -177,6 +187,9 @@ export const PlayerRoom = () => {
     const handleResetToLobby = (data: { summary: LobbySummary }) => {
       setPhase('LOBBY');
       setPlayers(data.summary.players);
+      if (data.summary?.maxPlayers) {
+        setMaxPlayers(data.summary.maxPlayers);
+      }
       setCurrentQuestion(null);
       setSelectedOption(null);
       setHasSubmitted(false);
@@ -189,6 +202,12 @@ export const PlayerRoom = () => {
       setRoomClosedMessage(data.reason || 'A sala foi encerrada pelo Host.');
     };
 
+    const handleKicked = (data: { reason?: string }) => {
+      setRoomClosedMessage(
+        data.reason || 'Você foi removido da sala pelo Host.',
+      );
+    };
+
     socket.on('connect', handleConnect);
     socket.on('room:player_joined', handlePlayerJoined);
     socket.on('room:player_left', handlePlayerLeft);
@@ -199,6 +218,7 @@ export const PlayerRoom = () => {
     socket.on('game:finished', handleFinished);
     socket.on('game:reset_to_lobby', handleResetToLobby);
     socket.on('room:closed', handleRoomClosed);
+    socket.on('room:kicked', handleKicked);
 
     return () => {
       socket.off('connect', handleConnect);
@@ -211,6 +231,7 @@ export const PlayerRoom = () => {
       socket.off('game:finished', handleFinished);
       socket.off('game:reset_to_lobby', handleResetToLobby);
       socket.off('room:closed', handleRoomClosed);
+      socket.off('room:kicked', handleKicked);
     };
   }, [roomId, navigate]);
 
@@ -325,7 +346,7 @@ export const PlayerRoom = () => {
               <Box display="flex" alignItems="center" gap={1} pt={1}>
                 <Users size={22} color="#ff0a69" />
                 <Typography variant="h6">
-                  Jogadores na sala ({players.length}/10):
+                  Jogadores na sala ({players.length}/{maxPlayers}):
                 </Typography>
               </Box>
 

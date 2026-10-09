@@ -67,6 +67,7 @@ export const HostDashboard = () => {
   const [phase, setPhase] = useState<HostPhase>('LOBBY');
   const [countdownValue, setCountdownValue] = useState<number>(3);
   const [players, setPlayers] = useState<MultiplayerPlayer[]>([]);
+  const [maxPlayers, setMaxPlayers] = useState<number>(10);
   const [currentQuestion, setCurrentQuestion] =
     useState<MultiplayerQuestion | null>(null);
   const [answeredCount, setAnsweredCount] = useState(0);
@@ -107,6 +108,9 @@ export const HostDashboard = () => {
         (res: { success: boolean; summary?: LobbySummary; error?: string }) => {
           if (res.success && res.summary) {
             setPlayers(res.summary.players);
+            if (res.summary.maxPlayers) {
+              setMaxPlayers(res.summary.maxPlayers);
+            }
             if (res.summary.status === 'LOBBY') {
               setPhase('LOBBY');
             } else if (res.summary.status === 'COUNTDOWN') {
@@ -142,6 +146,9 @@ export const HostDashboard = () => {
       summary: LobbySummary;
     }) => {
       setPlayers(data.summary.players);
+      if (data.summary?.maxPlayers) {
+        setMaxPlayers(data.summary.maxPlayers);
+      }
     };
 
     const handlePlayerLeft = (data: {
@@ -149,6 +156,9 @@ export const HostDashboard = () => {
       summary: LobbySummary;
     }) => {
       setPlayers(data.summary.players);
+      if (data.summary?.maxPlayers) {
+        setMaxPlayers(data.summary.maxPlayers);
+      }
     };
 
     const handleCountdown = (data?: { seconds?: number }) => {
@@ -202,6 +212,9 @@ export const HostDashboard = () => {
     const handleResetToLobby = (data: { summary: LobbySummary }) => {
       setPhase('LOBBY');
       setPlayers(data.summary.players);
+      if (data.summary?.maxPlayers) {
+        setMaxPlayers(data.summary.maxPlayers);
+      }
       setCurrentQuestion(null);
       setRoundResult(null);
       setScoreboard([]);
@@ -278,6 +291,25 @@ export const HostDashboard = () => {
       setCopiedNotification(true);
       setTimeout(() => setCopiedNotification(false), 2500);
     }
+  };
+
+  const handleKickPlayer = (playerId: string) => {
+    const socket = getSocket();
+    const hostToken = sessionStorage.getItem('quiz_host_token');
+    socket.emit(
+      'host:kick_player',
+      { roomId, hostToken, playerId },
+      (res: { success: boolean; summary?: LobbySummary; error?: string }) => {
+        if (res?.success && res.summary) {
+          setPlayers(res.summary.players);
+          if (res.summary.maxPlayers) {
+            setMaxPlayers(res.summary.maxPlayers);
+          }
+        } else if (res?.error) {
+          setErrorMessage(res.error);
+        }
+      },
+    );
   };
 
   const handleStartGame = () => {
@@ -439,7 +471,7 @@ export const HostDashboard = () => {
               <Box display="flex" alignItems="center" gap={1}>
                 <Users size={24} color="#ff0a69" />
                 <Typography variant="h6" fontWeight="bold">
-                  Participantes conectados: {players.length} / 10
+                  Participantes conectados: {players.length} / {maxPlayers}
                 </Typography>
               </Box>
 
@@ -475,6 +507,8 @@ export const HostDashboard = () => {
                       label={p.name}
                       color="primary"
                       variant="outlined"
+                      onDelete={() => handleKickPlayer(p.id)}
+                      title="Expulsar jogador"
                       sx={{ fontSize: '1.1rem', py: 2.5, px: 1 }}
                     />
                   ))
@@ -561,7 +595,9 @@ export const HostDashboard = () => {
 
           <OptionsGrid
             options={currentQuestion.options}
-            correctAnswer={isAnswerRevealed ? currentQuestion.answer : undefined}
+            correctAnswer={
+              isAnswerRevealed ? currentQuestion.answer : undefined
+            }
             disabled={true}
           />
 
@@ -597,6 +633,98 @@ export const HostDashboard = () => {
             sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2, width: '100%' }}
           >
             <Subtitle>Resumo das Respostas dos Jogadores</Subtitle>
+
+            {currentQuestion && (
+              <Box
+                mt={3}
+                mb={4}
+                p={3}
+                sx={{
+                  bgcolor: '#f8f9fa',
+                  borderRadius: 2,
+                  border: '1px solid #eee',
+                }}
+              >
+                <Text
+                  variant="h5"
+                  fontWeight="bold"
+                  textAlign="center"
+                  sx={{ mb: 2 }}
+                >
+                  {currentQuestion.question}
+                </Text>
+                <Grid
+                  container
+                  spacing={2}
+                  sx={{ mt: 1 }}
+                  justifyContent="center"
+                >
+                  {currentQuestion.options.map((option, idx) => {
+                    const isCorrect = idx === roundResult.correctAnswerIndex;
+                    const letter = String.fromCharCode(65 + idx);
+
+                    const totalVotes = roundResult.playerResults.filter(
+                      (pr) => pr.answered,
+                    ).length;
+                    const optionVotes = roundResult.playerResults.filter(
+                      (pr) => pr.optionIndex === idx,
+                    ).length;
+                    const percentage =
+                      totalVotes > 0
+                        ? Math.round((optionVotes / totalVotes) * 100)
+                        : 0;
+
+                    return (
+                      <Grid size={{ xs: 12, sm: 6 }} key={idx}>
+                        <Box
+                          sx={{
+                            p: 1.5,
+                            borderRadius: 1.5,
+                            bgcolor: isCorrect ? '#e8f5e9' : 'white',
+                            border: '1px solid',
+                            borderColor: isCorrect ? '#4caf50' : '#ddd',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 1.5,
+                          }}
+                        >
+                          <Box display="flex" alignItems="center" gap={1.5}>
+                            {isCorrect ? (
+                              <CheckCircle2 size={20} color="#4caf50" />
+                            ) : (
+                              <Box
+                                sx={{
+                                  width: 20,
+                                  height: 20,
+                                  borderRadius: '50%',
+                                  border: '2px solid #ccc',
+                                }}
+                              />
+                            )}
+                            <Text
+                              variant="h6"
+                              fontWeight={isCorrect ? 'bold' : 'regular'}
+                              color={isCorrect ? '#2e7d32' : 'text.primary'}
+                            >
+                              <strong>{letter}.</strong> {option}
+                            </Text>
+                          </Box>
+
+                          <Text
+                            variant="body1"
+                            fontWeight="bold"
+                            color={isCorrect ? '#2e7d32' : 'text.secondary'}
+                          >
+                            {percentage}% ({optionVotes})
+                          </Text>
+                        </Box>
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+              </Box>
+            )}
 
             <TableContainer sx={{ mt: 2, overflowX: 'auto' }}>
               <Table>
@@ -702,7 +830,7 @@ export const HostDashboard = () => {
               >
                 Próxima Pergunta
               </Button>
-              <Button fitContent size="small" onClick={handleEndGameEarly}>
+              <Button fitContent onClick={handleEndGameEarly}>
                 Encerrar Partida
               </Button>
             </Box>
