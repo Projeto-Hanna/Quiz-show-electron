@@ -23,7 +23,11 @@ import {
   ServerStatusBadge,
 } from '../../components';
 import { getSocket } from '../../services/socket';
-import type { LobbySummary, MultiplayerPlayer } from '../../types';
+import type {
+  LobbySummary,
+  MultiplayerPlayer,
+  RoomSyncState,
+} from '../../types';
 
 export const PlayerJoin = () => {
   const navigate = useNavigate();
@@ -61,13 +65,28 @@ export const PlayerJoin = () => {
       );
     }, 12000);
 
+    const savedRoomId = localStorage.getItem('quiz_room_id');
+    const savedPlayerName = (localStorage.getItem('quiz_player_name') || '')
+      .trim()
+      .toLowerCase();
+    const existingToken =
+      savedRoomId === cleanRoomId &&
+        savedPlayerName === cleanName.toLowerCase()
+        ? localStorage.getItem('quiz_player_token') || undefined
+        : undefined;
+
     socket.emit(
       'player:join_room',
-      { roomId: cleanRoomId, playerName: cleanName },
+      {
+        roomId: cleanRoomId,
+        playerName: cleanName,
+        playerToken: existingToken,
+      },
       (res: {
         success: boolean;
         player?: MultiplayerPlayer;
         summary?: LobbySummary;
+        sync?: RoomSyncState;
         error?: string;
       }) => {
         clearTimeout(timeout);
@@ -78,12 +97,18 @@ export const PlayerJoin = () => {
             sessionStorage.setItem('quiz_socket_id', socket.id);
           }
           sessionStorage.setItem('quiz_player_id', res.player.id);
+          localStorage.setItem('quiz_player_id', res.player.id);
           if (res.player.playerToken) {
             sessionStorage.setItem('quiz_player_token', res.player.playerToken);
+            localStorage.setItem('quiz_player_token', res.player.playerToken);
           }
           sessionStorage.setItem('quiz_player_name', res.player.name);
+          localStorage.setItem('quiz_player_name', res.player.name);
           sessionStorage.setItem('quiz_room_id', cleanRoomId);
-          navigate(`/multiplayer/room/${cleanRoomId}`);
+          localStorage.setItem('quiz_room_id', cleanRoomId);
+          navigate(`/multiplayer/room/${cleanRoomId}`, {
+            state: { summary: res.summary, sync: res.sync },
+          });
         } else {
           setErrorMessage(res.error || 'Não foi possível entrar na sala.');
         }

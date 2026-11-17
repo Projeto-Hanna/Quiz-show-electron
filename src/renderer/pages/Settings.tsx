@@ -62,7 +62,11 @@ export const Settings = () => {
   return (
     <>
       <main>
-        <Menu direction="column" gap="30px" sx={{ maxWidth: '800px', width: '100%' }}>
+        <Menu
+          direction="column"
+          gap="30px"
+          sx={{ maxWidth: '800px', width: '100%' }}
+        >
           <Title>Configurações</Title>
 
           <Paper
@@ -76,7 +80,9 @@ export const Settings = () => {
                 variant="fullWidth"
                 sx={{
                   '& .MuiTab-root': { fontWeight: 'bold' },
-                  '& .MuiTab-root.Mui-selected': { color: '#b80047 !important' },
+                  '& .MuiTab-root.Mui-selected': {
+                    color: '#b80047 !important',
+                  },
                   '& .MuiTabs-indicator': { backgroundColor: '#b80047' },
                 }}
               >
@@ -101,7 +107,7 @@ export const Settings = () => {
                   sx={{
                     paddingX: { xs: 2, sm: 6 },
                     paddingY: 2,
-                    borderColor: 'rgba(0,0,0,0.1)'
+                    borderColor: 'rgba(0,0,0,0.1)',
                   }}
                 >
                   <Subtitle>Comportamento</Subtitle>
@@ -169,13 +175,13 @@ export const Settings = () => {
                     sx={{
                       paddingX: { xs: 2, sm: 6 },
                       paddingY: 2,
-                      borderColor: 'rgba(0,0,0,0.1)'
+                      borderColor: 'rgba(0,0,0,0.1)',
                     }}
                   >
                     <Subtitle>Todos Responderam</Subtitle>
                     <Text variant="h5" color="text.secondary">
-                      Escolha o que deve acontecer quando todos os jogadores responderem
-                      à pergunta antes do tempo da rodada terminar.
+                      Escolha o que deve acontecer quando todos os jogadores
+                      responderem à pergunta antes do tempo da rodada terminar.
                     </Text>
 
                     <FormControl>
@@ -201,7 +207,11 @@ export const Settings = () => {
                             />
                           }
                           label={
-                            <Text variant="h6" color="black" fontWeight="regular">
+                            <Text
+                              variant="h6"
+                              color="black"
+                              fontWeight="regular"
+                            >
                               Aguardar o tempo acabar
                             </Text>
                           }
@@ -219,7 +229,11 @@ export const Settings = () => {
                             />
                           }
                           label={
-                            <Text variant="h6" color="black" fontWeight="regular">
+                            <Text
+                              variant="h6"
+                              color="black"
+                              fontWeight="regular"
+                            >
                               Pular para a próxima pergunta
                             </Text>
                           }
@@ -234,16 +248,17 @@ export const Settings = () => {
                     sx={{
                       paddingX: { xs: 2, sm: 6 },
                       paddingY: 2,
-                      borderColor: 'rgba(0,0,0,0.1)'
+                      borderColor: 'rgba(0,0,0,0.1)',
                     }}
                   >
                     <Subtitle>Servidor</Subtitle>
                     <Text variant="h5" color="text.secondary">
-                      Endereço do servidor dedicado Socket.IO. Se você hospedar o
-                      backend na nuvem (ex: Render, Railway, AWS), insira a URL aqui.
+                      Endereço do servidor dedicado Socket.IO. Se você hospedar
+                      o backend na nuvem (ex: Render, Railway, AWS), insira a
+                      URL aqui.
                     </Text>
                     <Box mt={2}>
-                      {!!import.meta.env.VITE_SERVER_URL ? (
+                      {import.meta.env.VITE_SERVER_URL ? (
                         <Text variant="body1" color="error" fontWeight="bold">
                           A URL oficial do servidor está fixada via variável de
                           ambiente e não pode ser alterada.

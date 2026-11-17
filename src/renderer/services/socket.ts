@@ -1,6 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 
 let socket: Socket | null = null;
+let currentSocketUrl = '';
 
 export type ServerStatus = 'idle' | 'waking' | 'online' | 'offline';
 
@@ -19,11 +20,7 @@ export const getServerUrl = (overrideUrl?: string): string => {
       : 'localhost';
   const defaultUrl = `http://${host}:3001`;
 
-  return (
-    overrideUrl ||
-    localStorage.getItem('quiz_server_url') ||
-    defaultUrl
-  );
+  return overrideUrl || localStorage.getItem('quiz_server_url') || defaultUrl;
 };
 
 export const getServerStatus = (): ServerStatus => currentServerStatus;
@@ -131,15 +128,20 @@ export const wakeUpServer = async (force = false): Promise<boolean> => {
 export const getSocket = (serverUrl?: string): Socket => {
   const url = getServerUrl(serverUrl);
 
-  if (!socket || !socket.connected) {
-    if (socket) {
-      socket.disconnect();
-    }
+  if (socket && currentSocketUrl !== url) {
+    socket.disconnect();
+    socket = null;
+  }
+
+  if (!socket) {
+    currentSocketUrl = url;
     socket = io(url, {
       autoConnect: true,
       transports: ['websocket', 'polling'],
-      reconnectionAttempts: 5,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
     });
 
     socket.on('connect', () => {
@@ -166,6 +168,22 @@ export const disconnectSocket = () => {
   if (socket) {
     socket.disconnect();
     socket = null;
+    currentSocketUrl = '';
     notifyStatus('offline');
   }
 };
+
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  const tryReconnect = () => {
+    if (socket && !socket.connected) {
+      socket.connect();
+    }
+  };
+
+  window.addEventListener('online', tryReconnect);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      tryReconnect();
+    }
+  });
+}

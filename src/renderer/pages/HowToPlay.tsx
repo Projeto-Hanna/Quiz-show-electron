@@ -265,8 +265,9 @@ export const HowToPlay = () => {
                         >
                           Limites da Sala:
                         </Text>{' '}
-                        As salas multiplayer suportam até 10 jogadores e um
-                        limite máximo de 100 perguntas por partida.
+                        As salas multiplayer suportam até 150 jogadores (o Host
+                        define o limite ao criar a sala) e um limite máximo de
+                        100 perguntas por partida.
                       </Text>
                     }
                   />
@@ -301,8 +302,8 @@ export const HowToPlay = () => {
                         >
                           Bônus de Velocidade:
                         </Text>{' '}
-                        Diferente do modo local, acertar uma pergunta te dá 100
-                        pontos base + até 50 pontos de bônus, proporcionais à
+                        Diferente do modo local, acertar uma pergunta te dá 1000
+                        pontos base + até 500 pontos de bônus, proporcionais à
                         rapidez da sua resposta. Quem responde mais rápido,
                         pontua mais!
                       </Text>

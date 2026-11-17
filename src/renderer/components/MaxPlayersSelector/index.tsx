@@ -10,11 +10,7 @@ type Props = {
   disabled?: boolean;
 };
 
-export const MaxPlayersSelector = ({
-  value,
-  onChange,
-  disabled,
-}: Props) => {
+export const MaxPlayersSelector = ({ value, onChange, disabled }: Props) => {
   const handlePlayersChange = (_: Event, newValue: number | number[]) => {
     const next =
       typeof newValue === 'number'
@@ -22,7 +18,7 @@ export const MaxPlayersSelector = ({
         : Array.isArray(newValue)
           ? newValue[0]
           : 10;
-    const clamped = Math.min(30, Math.max(1, Math.round(next)));
+    const clamped = Math.min(150, Math.max(1, Math.round(next)));
     onChange(clamped);
   };
 
@@ -41,10 +37,12 @@ export const MaxPlayersSelector = ({
 
         <Box display="flex" flexDirection="column" gap="10px">
           <Text variant="h5" color="text.secondary">
-            Defina a quantidade máxima de jogadores que poderão se conectar a esta sala (até 30 participantes).
+            Defina a quantidade máxima de jogadores que poderão se conectar a
+            esta sala (até 150 participantes).
           </Text>
           <Text variant="h5" fontWeight="bold" color="#b80047">
-            Limite atual: {value} {value === 1 ? 'participante' : 'participantes'}.
+            Limite atual: {value}{' '}
+            {value === 1 ? 'participante' : 'participantes'}.
           </Text>
         </Box>
 
@@ -53,7 +51,7 @@ export const MaxPlayersSelector = ({
           onChange={handlePlayersChange}
           disabled={disabled}
           min={1}
-          max={30}
+          max={150}
           step={1}
           sx={{
             color: pink[500],
@@ -72,12 +70,12 @@ export const MaxPlayersSelector = ({
           }}
           marks={[
             { value: 1, label: '1' },
-            { value: 5, label: '5' },
-            { value: 10, label: '10' },
-            { value: 15, label: '15' },
-            { value: 20, label: '20' },
             { value: 25, label: '25' },
-            { value: 30, label: '30' },
+            { value: 50, label: '50' },
+            { value: 75, label: '75' },
+            { value: 100, label: '100' },
+            { value: 125, label: '125' },
+            { value: 150, label: '150' },
           ]}
           valueLabelDisplay="auto"
         />

@@ -104,6 +104,7 @@ export const HostCreate = () => {
         if (response.success && response.roomId) {
           if (response.hostToken) {
             sessionStorage.setItem('quiz_host_token', response.hostToken);
+            localStorage.setItem('quiz_host_token', response.hostToken);
           }
           navigate(`/multiplayer/host/${response.roomId}`);
         } else {

@@ -43,11 +43,15 @@ import {
   ScoreboardTable,
 } from '../../components';
 import { getSocket } from '../../services/socket';
+import { getSyncCountdown } from '../../utils/syncTimer';
+import { useLobbyRoster, type RosterEvent } from '../../utils/lobbyRoster';
 import { useSettings } from '../../context/useSettings';
 import type {
+  LobbyCounts,
   LobbySummary,
   MultiplayerPlayer,
   MultiplayerQuestion,
+  RoomSyncState,
   RoundResult,
   ScoreboardEntry,
 } from '../../types';
@@ -66,17 +70,24 @@ export const HostDashboard = () => {
 
   const [phase, setPhase] = useState<HostPhase>('LOBBY');
   const [countdownValue, setCountdownValue] = useState<number>(3);
-  const [players, setPlayers] = useState<MultiplayerPlayer[]>([]);
+  const {
+    players,
+    playersRef,
+    replacePlayers: setPlayers,
+    applyEvent: applyRosterEvent,
+  } = useLobbyRoster();
   const [maxPlayers, setMaxPlayers] = useState<number>(10);
   const [currentQuestion, setCurrentQuestion] =
     useState<MultiplayerQuestion | null>(null);
   const [answeredCount, setAnsweredCount] = useState(0);
+  const [activePlayersCount, setActivePlayersCount] = useState(0);
   const [remainingTime, setRemainingTime] = useState(15);
   const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
   const [scoreboard, setScoreboard] = useState<ScoreboardEntry[]>([]);
   const [copiedNotification, setCopiedNotification] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);
+  const [isStartingGame, setIsStartingGame] = useState(false);
 
   const { settings } = useSettings();
   const allAnsweredBehaviorRef = useRef(
@@ -88,13 +99,18 @@ export const HostDashboard = () => {
   }, [settings.multiplayerAllAnsweredBehavior]);
 
   const hasEndedRoundRef = useRef(false);
+  const deadlineRef = useRef<number>(0);
+
+  const getStoredHostToken = () =>
+    sessionStorage.getItem('quiz_host_token') ||
+    localStorage.getItem('quiz_host_token');
 
   useEffect(() => {
     if (!roomId) return;
     const socket = getSocket();
 
     const rejoinHost = () => {
-      const hostToken = sessionStorage.getItem('quiz_host_token');
+      const hostToken = getStoredHostToken();
       if (!hostToken) {
         setErrorMessage(
           'Sessão de host não encontrada. Volte ao menu principal.',
@@ -105,22 +121,64 @@ export const HostDashboard = () => {
       socket.emit(
         'host:rejoin_room',
         { roomId, hostToken },
-        (res: { success: boolean; summary?: LobbySummary; error?: string }) => {
+        (res: {
+          success: boolean;
+          summary?: LobbySummary;
+          sync?: RoomSyncState;
+          error?: string;
+        }) => {
           if (res.success && res.summary) {
             setPlayers(res.summary.players);
             if (res.summary.maxPlayers) {
               setMaxPlayers(res.summary.maxPlayers);
             }
-            if (res.summary.status === 'LOBBY') {
+
+            const sync = res.sync;
+            if (sync) {
+              if (sync.status === 'LOBBY') {
+                // A start request may have been lost with the old connection
+                setIsStartingGame(false);
+                setPhase('LOBBY');
+              } else if (sync.status === 'COUNTDOWN') {
+                setPhase('COUNTDOWN');
+              } else if (sync.status === 'QUESTION') {
+                if (sync.currentQuestion) {
+                  const { deadline, remainingSeconds } = getSyncCountdown(sync);
+                  deadlineRef.current = deadline;
+                  setCurrentQuestion(sync.currentQuestion);
+                  setRemainingTime(remainingSeconds);
+                  setAnsweredCount(sync.answeredCount ?? 0);
+                  const connectedCount = res.summary.players.filter(
+                    (p) => p.connected !== false,
+                  ).length;
+                  setActivePlayersCount(
+                    connectedCount || res.summary.players.length,
+                  );
+                  hasEndedRoundRef.current = false;
+                }
+                setPhase('QUESTION');
+              } else if (sync.status === 'ROUND_RESULT') {
+                if (sync.currentQuestion) {
+                  setCurrentQuestion(sync.currentQuestion);
+                }
+                if (sync.roundResult) {
+                  setRoundResult(sync.roundResult);
+                }
+                setPhase('ROUND_RESULT');
+              } else if (sync.status === 'SCOREBOARD') {
+                if (sync.scoreboard) {
+                  setScoreboard(sync.scoreboard);
+                }
+                setPhase('SCOREBOARD');
+              } else if (sync.status === 'FINISHED') {
+                if (sync.scoreboard) {
+                  setScoreboard(sync.scoreboard);
+                }
+                setPhase('FINISHED');
+              }
+            } else if (res.summary.status === 'LOBBY') {
+              setIsStartingGame(false);
               setPhase('LOBBY');
-            } else if (res.summary.status === 'COUNTDOWN') {
-              setPhase('COUNTDOWN');
-            } else if (res.summary.status === 'QUESTION') {
-              setPhase('QUESTION');
-            } else if (res.summary.status === 'SCOREBOARD') {
-              setPhase('SCOREBOARD');
-            } else if (res.summary.status === 'FINISHED') {
-              setPhase('FINISHED');
             }
           } else {
             setErrorMessage(
@@ -135,41 +193,57 @@ export const HostDashboard = () => {
       rejoinHost();
     };
 
-    if (!socket.connected) {
-      socket.once('connect', handleConnect);
-    } else {
+    if (socket.connected) {
       rejoinHost();
     }
 
-    const handlePlayerJoined = (data: {
-      player: MultiplayerPlayer;
-      summary: LobbySummary;
-    }) => {
-      setPlayers(data.summary.players);
-      if (data.summary?.maxPlayers) {
-        setMaxPlayers(data.summary.maxPlayers);
+    // If an incremental roster event was missed, fetch the full list again.
+    let resyncTimer: ReturnType<typeof setTimeout> | undefined;
+    const handleRosterEvent = (event: RosterEvent) => {
+      const consistent = applyRosterEvent(event);
+      if (event.summary?.maxPlayers) {
+        setMaxPlayers(event.summary.maxPlayers);
+      }
+      if (!consistent && !resyncTimer) {
+        resyncTimer = setTimeout(() => {
+          resyncTimer = undefined;
+          rejoinHost();
+        }, 500);
       }
     };
+
+    const handlePlayerJoined = (data: {
+      player: MultiplayerPlayer;
+      summary: LobbyCounts;
+    }) => handleRosterEvent({ type: 'joined', ...data });
 
     const handlePlayerLeft = (data: {
       player: MultiplayerPlayer;
-      summary: LobbySummary;
-    }) => {
-      setPlayers(data.summary.players);
-      if (data.summary?.maxPlayers) {
-        setMaxPlayers(data.summary.maxPlayers);
-      }
-    };
+      summary: LobbyCounts;
+    }) => handleRosterEvent({ type: 'left', ...data });
+
+    const handlePlayerConnection = (data: {
+      playerId: string;
+      connected: boolean;
+      summary: LobbyCounts;
+    }) => handleRosterEvent({ type: 'connection', ...data });
 
     const handleCountdown = (data?: { seconds?: number }) => {
+      setIsStartingGame(false);
       setCountdownValue(typeof data?.seconds === 'number' ? data.seconds : 3);
       setPhase('COUNTDOWN');
     };
 
     const handleQuestionStarted = (data: { question: MultiplayerQuestion }) => {
+      const limit = data.question.timeLimit || 15;
+      deadlineRef.current = Date.now() + limit * 1000;
       setCurrentQuestion(data.question);
       setAnsweredCount(0);
-      setRemainingTime(data.question.timeLimit || 15);
+      const connectedCount = playersRef.current.filter(
+        (p) => p.connected !== false,
+      ).length;
+      setActivePlayersCount(connectedCount || playersRef.current.length);
+      setRemainingTime(limit);
       hasEndedRoundRef.current = false;
       setIsAnswerRevealed(false);
       setPhase('QUESTION');
@@ -181,6 +255,7 @@ export const HostDashboard = () => {
       allAnswered: boolean;
     }) => {
       setAnsweredCount(data.totalAnswered);
+      setActivePlayersCount(data.totalPlayers);
 
       if (
         data.allAnswered &&
@@ -189,7 +264,7 @@ export const HostDashboard = () => {
       ) {
         hasEndedRoundRef.current = true;
         const socket = getSocket();
-        const hostToken = sessionStorage.getItem('quiz_host_token');
+        const hostToken = getStoredHostToken();
         socket.emit('host:end_round', { roomId, hostToken });
       }
     };
@@ -211,6 +286,7 @@ export const HostDashboard = () => {
 
     const handleResetToLobby = (data: { summary: LobbySummary }) => {
       setPhase('LOBBY');
+      setIsStartingGame(false);
       setPlayers(data.summary.players);
       if (data.summary?.maxPlayers) {
         setMaxPlayers(data.summary.maxPlayers);
@@ -226,6 +302,7 @@ export const HostDashboard = () => {
     socket.on('connect', handleConnect);
     socket.on('room:player_joined', handlePlayerJoined);
     socket.on('room:player_left', handlePlayerLeft);
+    socket.on('room:player_connection', handlePlayerConnection);
     socket.on('game:countdown', handleCountdown);
     socket.on('game:question_started', handleQuestionStarted);
     socket.on('game:answer_progress', handleAnswerProgress);
@@ -238,6 +315,7 @@ export const HostDashboard = () => {
       socket.off('connect', handleConnect);
       socket.off('room:player_joined', handlePlayerJoined);
       socket.off('room:player_left', handlePlayerLeft);
+      socket.off('room:player_connection', handlePlayerConnection);
       socket.off('game:countdown', handleCountdown);
       socket.off('game:question_started', handleQuestionStarted);
       socket.off('game:answer_progress', handleAnswerProgress);
@@ -245,8 +323,9 @@ export const HostDashboard = () => {
       socket.off('game:scoreboard', handleScoreboard);
       socket.off('game:finished', handleFinished);
       socket.off('game:reset_to_lobby', handleResetToLobby);
+      if (resyncTimer) clearTimeout(resyncTimer);
     };
-  }, [roomId]);
+  }, [roomId, setPlayers, applyRosterEvent, playersRef]);
 
   // Host countdown effect
   useEffect(() => {
@@ -263,27 +342,21 @@ export const HostDashboard = () => {
 
   // Host question timer countdown
   useEffect(() => {
-    if (phase !== 'QUESTION' || remainingTime <= 0) return;
+    if (phase !== 'QUESTION' || !currentQuestion) return;
 
     const timer = setInterval(() => {
-      setRemainingTime((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          if (!hasEndedRoundRef.current) {
-            hasEndedRoundRef.current = true;
-            // Automatically trigger end round when time expires
-            const socket = getSocket();
-            const hostToken = sessionStorage.getItem('quiz_host_token');
-            socket.emit('host:end_round', { roomId, hostToken });
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+      const remaining = Math.max(
+        0,
+        Math.ceil((deadlineRef.current - Date.now()) / 1000),
+      );
+      setRemainingTime(remaining);
+      if (remaining <= 0) {
+        clearInterval(timer);
+      }
+    }, 250);
 
     return () => clearInterval(timer);
-  }, [phase, remainingTime, roomId]);
+  }, [phase, currentQuestion]);
 
   const handleCopyCode = () => {
     if (roomId) {
@@ -295,7 +368,7 @@ export const HostDashboard = () => {
 
   const handleKickPlayer = (playerId: string) => {
     const socket = getSocket();
-    const hostToken = sessionStorage.getItem('quiz_host_token');
+    const hostToken = getStoredHostToken();
     socket.emit(
       'host:kick_player',
       { roomId, hostToken, playerId },
@@ -312,22 +385,31 @@ export const HostDashboard = () => {
     );
   };
 
+  const connectedPlayersCount = players.filter(
+    (p) => p.connected !== false,
+  ).length;
+  const disconnectedPlayersCount = players.length - connectedPlayersCount;
+
   const handleStartGame = () => {
-    if (players.length === 0) {
+    if (isStartingGame) return;
+
+    if (connectedPlayersCount === 0) {
       setErrorMessage(
-        'Aguarde ao menos 1 participante para iniciar a partida.',
+        'Aguarde ao menos 1 participante conectado para iniciar a partida.',
       );
       return;
     }
 
+    setIsStartingGame(true);
     const socket = getSocket();
-    const hostToken = sessionStorage.getItem('quiz_host_token');
+    const hostToken = getStoredHostToken();
     socket.emit(
       'host:start_game',
       { roomId, hostToken },
       (res: { success: boolean; error?: string }) => {
-        if (!res.success) {
-          setErrorMessage(res.error || 'Erro ao iniciar partida.');
+        if (!res?.success) {
+          setIsStartingGame(false);
+          setErrorMessage(res?.error || 'Erro ao iniciar partida.');
         }
       },
     );
@@ -336,19 +418,19 @@ export const HostDashboard = () => {
   const handleEndRoundNow = () => {
     hasEndedRoundRef.current = true;
     const socket = getSocket();
-    const hostToken = sessionStorage.getItem('quiz_host_token');
+    const hostToken = getStoredHostToken();
     socket.emit('host:end_round', { roomId, hostToken });
   };
 
   const handleShowScoreboard = () => {
     const socket = getSocket();
-    const hostToken = sessionStorage.getItem('quiz_host_token');
+    const hostToken = getStoredHostToken();
     socket.emit('host:show_scoreboard', { roomId, hostToken });
   };
 
   const handleNextQuestion = () => {
     const socket = getSocket();
-    const hostToken = sessionStorage.getItem('quiz_host_token');
+    const hostToken = getStoredHostToken();
     socket.emit(
       'host:next_question',
       { roomId, hostToken },
@@ -362,21 +444,28 @@ export const HostDashboard = () => {
 
   const handleEndGameEarly = () => {
     const socket = getSocket();
-    const hostToken = sessionStorage.getItem('quiz_host_token');
+    const hostToken = getStoredHostToken();
     socket.emit('host:end_game', { roomId, hostToken });
   };
 
-  const handleCancelRoom = () => {
+  const closeRoomAndNavigate = (path: string) => {
     const socket = getSocket();
-    const hostToken = sessionStorage.getItem('quiz_host_token');
+    const hostToken = getStoredHostToken();
     socket.emit('host:cancel_room', { roomId, hostToken });
     sessionStorage.removeItem('quiz_host_token');
-    navigate('/multiplayer');
+    localStorage.removeItem('quiz_host_token');
+    navigate(path);
   };
+
+  const handleCancelRoom = () => closeRoomAndNavigate('/multiplayer');
+
+  // Leaving after the game ends must close the room on the server too; otherwise
+  // it lingers for an hour with this socket still registered as its Host.
+  const handleLeaveFinishedRoom = () => closeRoomAndNavigate('/');
 
   const handleRestartGame = () => {
     const socket = getSocket();
-    const hostToken = sessionStorage.getItem('quiz_host_token');
+    const hostToken = getStoredHostToken();
     socket.emit(
       'host:restart_game',
       { roomId, hostToken },
@@ -471,8 +560,14 @@ export const HostDashboard = () => {
               <Box display="flex" alignItems="center" gap={1}>
                 <Users size={24} color="#ff0a69" />
                 <Typography variant="h6" fontWeight="bold">
-                  Participantes conectados: {players.length} / {maxPlayers}
+                  Participantes conectados: {connectedPlayersCount} /{' '}
+                  {maxPlayers}
                 </Typography>
+                {disconnectedPlayersCount > 0 && (
+                  <Typography variant="body2" color="text.secondary">
+                    ({disconnectedPlayersCount} reconectando…)
+                  </Typography>
+                )}
               </Box>
 
               {/* Connected Players Badges */}
@@ -482,7 +577,10 @@ export const HostDashboard = () => {
                   flexWrap: 'wrap',
                   gap: 1.5,
                   justifyContent: 'center',
+                  alignContent: 'flex-start',
                   minHeight: 80,
+                  maxHeight: 280,
+                  overflowY: 'auto',
                   p: 2,
                   bgcolor: '#f8f9fa',
                   borderRadius: 2,
@@ -504,12 +602,21 @@ export const HostDashboard = () => {
                       avatar={
                         <Avatar sx={{ bgcolor: '#ff0a69' }}>{idx + 1}</Avatar>
                       }
-                      label={p.name}
-                      color="primary"
+                      label={
+                        p.connected === false
+                          ? `${p.name} (desconectado)`
+                          : p.name
+                      }
+                      color={p.connected === false ? 'default' : 'primary'}
                       variant="outlined"
                       onDelete={() => handleKickPlayer(p.id)}
                       title="Expulsar jogador"
-                      sx={{ fontSize: '1.1rem', py: 2.5, px: 1 }}
+                      sx={{
+                        fontSize: '1.1rem',
+                        py: 2.5,
+                        px: 1,
+                        opacity: p.connected === false ? 0.55 : 1,
+                      }}
                     />
                   ))
                 )}
@@ -526,10 +633,10 @@ export const HostDashboard = () => {
                 <Button
                   icon={<Play size={24} />}
                   onClick={handleStartGame}
-                  disabled={players.length === 0}
+                  disabled={connectedPlayersCount === 0 || isStartingGame}
                   inverted
                 >
-                  {`Iniciar Partida com ${players.length} ${players.length === 1 ? 'Jogador' : 'Jogadores'}`}
+                  {`Iniciar Partida com ${connectedPlayersCount} ${connectedPlayersCount === 1 ? 'Jogador' : 'Jogadores'}`}
                 </Button>
 
                 <Button
@@ -567,7 +674,7 @@ export const HostDashboard = () => {
             remainingTime={remainingTime}
             timeLimit={currentQuestion.timeLimit}
             answeredCount={answeredCount}
-            playersCount={players.length}
+            playersCount={activePlayersCount || players.length}
           />
 
           {/* Question Text */}
@@ -726,8 +833,42 @@ export const HostDashboard = () => {
               </Box>
             )}
 
-            <TableContainer sx={{ mt: 2, overflowX: 'auto' }}>
-              <Table>
+            <Box
+              display="flex"
+              justifyContent="center"
+              gap={2}
+              mt={2}
+              mb={3}
+              flexWrap="wrap"
+            >
+              <Button
+                fitContent
+                icon={<Trophy size={20} />}
+                onClick={handleShowScoreboard}
+              >
+                Ver Placar Geral
+              </Button>
+              <Button
+                fitContent
+                icon={<SkipForward size={20} />}
+                onClick={handleNextQuestion}
+                inverted
+              >
+                {roundResult.hasMoreQuestions
+                  ? 'Próxima Pergunta'
+                  : 'Finalizar Jogo'}
+              </Button>
+            </Box>
+
+            <TableContainer
+              sx={{
+                mt: 2,
+                maxHeight: 380,
+                overflowX: 'auto',
+                overflowY: 'auto',
+              }}
+            >
+              <Table stickyHeader>
                 <TableHead>
                   <TableRow>
                     <TableCell>
@@ -774,32 +915,6 @@ export const HostDashboard = () => {
                 </TableBody>
               </Table>
             </TableContainer>
-
-            <Box
-              display="flex"
-              justifyContent="center"
-              gap={2}
-              mt={4}
-              flexWrap="wrap"
-            >
-              <Button
-                fitContent
-                icon={<Trophy size={20} />}
-                onClick={handleShowScoreboard}
-              >
-                Ver Placar Geral
-              </Button>
-              <Button
-                fitContent
-                icon={<SkipForward size={20} />}
-                onClick={handleNextQuestion}
-                inverted
-              >
-                {roundResult.hasMoreQuestions
-                  ? 'Próxima Pergunta'
-                  : 'Finalizar Jogo'}
-              </Button>
-            </Box>
           </Paper>
         </Stack>
       )}
@@ -940,7 +1055,12 @@ export const HostDashboard = () => {
                 <Typography variant="h6" fontWeight="bold" mb={2}>
                   Demais Participantes:
                 </Typography>
-                <Stack spacing={1} maxWidth={500} mx="auto">
+                <Stack
+                  spacing={1}
+                  maxWidth={500}
+                  mx="auto"
+                  sx={{ maxHeight: 280, overflowY: 'auto', pr: 1 }}
+                >
                   {scoreboard.slice(3).map((p) => (
                     <Box
                       key={p.id}
@@ -975,7 +1095,7 @@ export const HostDashboard = () => {
               >
                 Reiniciar Partida
               </Button>
-              <Button fitContent onClick={() => navigate('/')}>
+              <Button fitContent onClick={handleLeaveFinishedRoom}>
                 Voltar ao Menu Principal
               </Button>
             </Stack>

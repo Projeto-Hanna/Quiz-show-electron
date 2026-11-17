@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Avatar,
   Box,
@@ -28,10 +28,14 @@ import {
   ScoreboardTable,
 } from '../../components';
 import { getSocket } from '../../services/socket';
+import { getSyncCountdown } from '../../utils/syncTimer';
+import { useLobbyRoster, type RosterEvent } from '../../utils/lobbyRoster';
 import type {
+  LobbyCounts,
   LobbySummary,
   MultiplayerPlayer,
   MultiplayerQuestion,
+  RoomSyncState,
   RoundResult,
   ScoreboardEntry,
 } from '../../types';
@@ -44,21 +48,59 @@ type PlayerPhase =
   | 'SCOREBOARD'
   | 'FINISHED';
 
+const getSessionValue = (key: string): string | null =>
+  sessionStorage.getItem(key) || localStorage.getItem(key);
+
+const setSessionValue = (key: string, value: string): void => {
+  sessionStorage.setItem(key, value);
+  localStorage.setItem(key, value);
+};
+
+const clearPlayerSession = (): void => {
+  sessionStorage.removeItem('quiz_socket_id');
+  [
+    'quiz_player_id',
+    'quiz_player_token',
+    'quiz_player_name',
+    'quiz_room_id',
+  ].forEach((key) => {
+    sessionStorage.removeItem(key);
+    localStorage.removeItem(key);
+  });
+};
+
 export const PlayerRoom = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = location.state as {
+    summary?: LobbySummary;
+    sync?: RoomSyncState;
+  } | null;
+  const initialSummary = locationState?.summary;
+  const hasInitialSummaryRef = useRef(Boolean(initialSummary));
+  const initialSyncRef = useRef<RoomSyncState | undefined>(locationState?.sync);
+  const hasLocationStateRef = useRef(Boolean(locationState));
+  const deadlineRef = useRef<number>(0);
+  const isRoomTerminatedRef = useRef(false);
 
-  const [playerName] = useState<string>(
-    () => sessionStorage.getItem('quiz_player_name') || 'Jogador',
+  const [playerName, setPlayerName] = useState<string>(
+    () => getSessionValue('quiz_player_name') || 'Jogador',
   );
-  const [playerId] = useState<string>(
-    () => sessionStorage.getItem('quiz_player_id') || '',
+  const [playerId, setPlayerId] = useState<string>(
+    () => getSessionValue('quiz_player_id') || '',
   );
 
   const [phase, setPhase] = useState<PlayerPhase>('LOBBY');
   const [countdownValue, setCountdownValue] = useState<number>(3);
-  const [players, setPlayers] = useState<MultiplayerPlayer[]>([]);
-  const [maxPlayers, setMaxPlayers] = useState<number>(10);
+  const {
+    players,
+    replacePlayers: setPlayers,
+    applyEvent: applyRosterEvent,
+  } = useLobbyRoster(initialSummary?.players || []);
+  const [maxPlayers, setMaxPlayers] = useState<number>(
+    () => initialSummary?.maxPlayers || 10,
+  );
   const [currentQuestion, setCurrentQuestion] =
     useState<MultiplayerQuestion | null>(null);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -72,9 +114,49 @@ export const PlayerRoom = () => {
     if (!roomId) return;
     const socket = getSocket();
 
+    const applySyncState = (sync: RoomSyncState) => {
+      if (sync.status === 'LOBBY') {
+        setPhase('LOBBY');
+      } else if (sync.status === 'COUNTDOWN') {
+        setPhase('COUNTDOWN');
+      } else if (sync.status === 'QUESTION') {
+        if (sync.currentQuestion) {
+          const { deadline, remainingSeconds } = getSyncCountdown(sync);
+          deadlineRef.current = deadline;
+          setCurrentQuestion(sync.currentQuestion);
+          setRemainingTime(remainingSeconds);
+          setHasSubmitted(Boolean(sync.playerAnswered));
+          setSelectedOption(sync.playerSelectedOption ?? null);
+        }
+        setPhase('QUESTION');
+      } else if (sync.status === 'ROUND_RESULT') {
+        if (sync.currentQuestion) {
+          setCurrentQuestion(sync.currentQuestion);
+        }
+        if (sync.roundResult) {
+          setRoundResult(sync.roundResult);
+        }
+        setHasSubmitted(Boolean(sync.playerAnswered));
+        setSelectedOption(sync.playerSelectedOption ?? null);
+        setPhase('ROUND_RESULT');
+      } else if (sync.status === 'SCOREBOARD') {
+        if (sync.scoreboard) {
+          setScoreboard(sync.scoreboard);
+        }
+        setPhase('SCOREBOARD');
+      } else if (sync.status === 'FINISHED') {
+        if (sync.scoreboard) {
+          setScoreboard(sync.scoreboard);
+        }
+        setPhase('FINISHED');
+      }
+    };
+
     const rejoinRoom = () => {
-      const storedName = sessionStorage.getItem('quiz_player_name');
-      const storedId = sessionStorage.getItem('quiz_player_id');
+      if (isRoomTerminatedRef.current) return;
+
+      const storedName = getSessionValue('quiz_player_name');
+      const storedToken = getSessionValue('quiz_player_token');
       if (!storedName) {
         navigate('/multiplayer/join');
         return;
@@ -85,12 +167,13 @@ export const PlayerRoom = () => {
         {
           roomId,
           playerName: storedName,
-          playerId: storedId || undefined,
+          playerToken: storedToken || undefined,
         },
         (res: {
           success: boolean;
           player?: MultiplayerPlayer;
           summary?: LobbySummary;
+          sync?: RoomSyncState;
           error?: string;
         }) => {
           if (res.success) {
@@ -98,25 +181,30 @@ export const PlayerRoom = () => {
               sessionStorage.setItem('quiz_socket_id', socket.id);
             }
             if (res.player) {
-              sessionStorage.setItem('quiz_player_id', res.player.id);
+              setSessionValue('quiz_player_id', res.player.id);
+              setPlayerId(res.player.id);
               if (res.player.playerToken) {
-                sessionStorage.setItem(
-                  'quiz_player_token',
-                  res.player.playerToken,
-                );
+                setSessionValue('quiz_player_token', res.player.playerToken);
               }
-              sessionStorage.setItem('quiz_player_name', res.player.name);
+              setSessionValue('quiz_player_name', res.player.name);
+              setPlayerName(res.player.name);
+              setSessionValue('quiz_room_id', roomId);
             }
             if (res.summary) {
               setPlayers(res.summary.players);
               if (res.summary.maxPlayers) {
                 setMaxPlayers(res.summary.maxPlayers);
               }
-              if (res.summary.status === 'LOBBY') {
-                setPhase('LOBBY');
-              }
+            }
+
+            if (res.sync) {
+              applySyncState(res.sync);
+            } else if (res.summary?.status === 'LOBBY') {
+              setPhase('LOBBY');
             }
           } else {
+            isRoomTerminatedRef.current = true;
+            clearPlayerSession();
             setRoomClosedMessage(
               res.error || 'Não foi possível reconectar à sala.',
             );
@@ -125,36 +213,68 @@ export const PlayerRoom = () => {
       );
     };
 
-    // Auto-rejoin if this is a fresh connection or page refresh
+    // Auto-rejoin if this is a fresh connection, page refresh, or missing initial summary
     const lastSocketId = sessionStorage.getItem('quiz_socket_id');
-    if (!lastSocketId || !socket.connected || socket.id !== lastSocketId) {
-      if (socket.connected) {
-        rejoinRoom();
-      } else {
-        socket.once('connect', rejoinRoom);
-      }
+    if (
+      socket.connected &&
+      (!lastSocketId ||
+        socket.id !== lastSocketId ||
+        !hasInitialSummaryRef.current)
+    ) {
+      rejoinRoom();
+    } else if (socket.connected && initialSyncRef.current) {
+      // Only trust the sync handed over by PlayerJoin while still on that same
+      // connection. After a page reload the router state survives but is stale,
+      // so we wait for the 'connect' handler to rejoin and fetch a fresh sync.
+      applySyncState(initialSyncRef.current);
+    }
+    initialSyncRef.current = undefined;
+
+    // Drop the navigation state so a later reload can't replay this snapshot.
+    if (hasLocationStateRef.current) {
+      hasLocationStateRef.current = false;
+      navigate(`/multiplayer/room/${roomId}`, { replace: true, state: null });
     }
 
     const handleConnect = () => {
+      if (isRoomTerminatedRef.current) return;
       const activeSocketId = sessionStorage.getItem('quiz_socket_id');
       if (socket.id && socket.id !== activeSocketId) {
         rejoinRoom();
       }
     };
 
-    const handlePlayerJoined = (data: { summary: LobbySummary }) => {
-      setPlayers(data.summary.players);
-      if (data.summary?.maxPlayers) {
-        setMaxPlayers(data.summary.maxPlayers);
+    // If an incremental roster event was missed (e.g. while this page was still
+    // mounting after PlayerJoin), rejoin to fetch the full list again.
+    let resyncTimer: ReturnType<typeof setTimeout> | undefined;
+    const handleRosterEvent = (event: RosterEvent) => {
+      const consistent = applyRosterEvent(event);
+      if (event.summary?.maxPlayers) {
+        setMaxPlayers(event.summary.maxPlayers);
+      }
+      if (!consistent && !resyncTimer && !isRoomTerminatedRef.current) {
+        resyncTimer = setTimeout(() => {
+          resyncTimer = undefined;
+          rejoinRoom();
+        }, 500);
       }
     };
 
-    const handlePlayerLeft = (data: { summary: LobbySummary }) => {
-      setPlayers(data.summary.players);
-      if (data.summary?.maxPlayers) {
-        setMaxPlayers(data.summary.maxPlayers);
-      }
-    };
+    const handlePlayerJoined = (data: {
+      player: MultiplayerPlayer;
+      summary: LobbyCounts;
+    }) => handleRosterEvent({ type: 'joined', ...data });
+
+    const handlePlayerLeft = (data: {
+      player: MultiplayerPlayer;
+      summary: LobbyCounts;
+    }) => handleRosterEvent({ type: 'left', ...data });
+
+    const handlePlayerConnection = (data: {
+      playerId: string;
+      connected: boolean;
+      summary: LobbyCounts;
+    }) => handleRosterEvent({ type: 'connection', ...data });
 
     const handleCountdown = (data?: { seconds?: number }) => {
       setCountdownValue(typeof data?.seconds === 'number' ? data.seconds : 3);
@@ -162,10 +282,12 @@ export const PlayerRoom = () => {
     };
 
     const handleQuestionStarted = (data: { question: MultiplayerQuestion }) => {
+      const limit = data.question.timeLimit || 15;
+      deadlineRef.current = Date.now() + limit * 1000;
       setCurrentQuestion(data.question);
       setSelectedOption(null);
       setHasSubmitted(false);
-      setRemainingTime(data.question.timeLimit || 15);
+      setRemainingTime(limit);
       setPhase('QUESTION');
     };
 
@@ -199,10 +321,14 @@ export const PlayerRoom = () => {
     };
 
     const handleRoomClosed = (data: { reason?: string }) => {
+      isRoomTerminatedRef.current = true;
+      clearPlayerSession();
       setRoomClosedMessage(data.reason || 'A sala foi encerrada pelo Host.');
     };
 
     const handleKicked = (data: { reason?: string }) => {
+      isRoomTerminatedRef.current = true;
+      clearPlayerSession();
       setRoomClosedMessage(
         data.reason || 'Você foi removido da sala pelo Host.',
       );
@@ -211,6 +337,7 @@ export const PlayerRoom = () => {
     socket.on('connect', handleConnect);
     socket.on('room:player_joined', handlePlayerJoined);
     socket.on('room:player_left', handlePlayerLeft);
+    socket.on('room:player_connection', handlePlayerConnection);
     socket.on('game:countdown', handleCountdown);
     socket.on('game:question_started', handleQuestionStarted);
     socket.on('game:round_result', handleRoundResult);
@@ -224,6 +351,7 @@ export const PlayerRoom = () => {
       socket.off('connect', handleConnect);
       socket.off('room:player_joined', handlePlayerJoined);
       socket.off('room:player_left', handlePlayerLeft);
+      socket.off('room:player_connection', handlePlayerConnection);
       socket.off('game:countdown', handleCountdown);
       socket.off('game:question_started', handleQuestionStarted);
       socket.off('game:round_result', handleRoundResult);
@@ -232,8 +360,9 @@ export const PlayerRoom = () => {
       socket.off('game:reset_to_lobby', handleResetToLobby);
       socket.off('room:closed', handleRoomClosed);
       socket.off('room:kicked', handleKicked);
+      if (resyncTimer) clearTimeout(resyncTimer);
     };
-  }, [roomId, navigate]);
+  }, [roomId, navigate, setPlayers, applyRosterEvent]);
 
   // Countdown effect
   useEffect(() => {
@@ -250,14 +379,21 @@ export const PlayerRoom = () => {
 
   // Synchronized countdown for player
   useEffect(() => {
-    if (phase !== 'QUESTION' || remainingTime <= 0) return;
+    if (phase !== 'QUESTION' || !currentQuestion) return;
 
     const timer = setInterval(() => {
-      setRemainingTime((prev) => (prev <= 1 ? 0 : prev - 1));
-    }, 1000);
+      const remaining = Math.max(
+        0,
+        Math.ceil((deadlineRef.current - Date.now()) / 1000),
+      );
+      setRemainingTime(remaining);
+      if (remaining <= 0) {
+        clearInterval(timer);
+      }
+    }, 250);
 
     return () => clearInterval(timer);
-  }, [phase, remainingTime]);
+  }, [phase, currentQuestion]);
 
   const handleSelectOption = (optionIndex: number) => {
     if (hasSubmitted || !currentQuestion || remainingTime <= 0) return;
@@ -266,23 +402,43 @@ export const PlayerRoom = () => {
     setHasSubmitted(true);
 
     const socket = getSocket();
-    const playerToken = sessionStorage.getItem('quiz_player_token');
+    const playerToken = getSessionValue('quiz_player_token');
 
-    socket.emit('player:submit_answer', {
-      roomId,
-      playerId,
-      playerToken,
-      optionIndex,
-    });
+    socket.emit(
+      'player:submit_answer',
+      {
+        roomId,
+        playerToken,
+        optionIndex,
+        questionIndex: currentQuestion.index,
+      },
+      (res: {
+        success: boolean;
+        pointsEarned?: number;
+        isCorrect?: boolean;
+        error?: string;
+      }) => {
+        if (!res?.success && res?.error !== 'Resposta já enviada.') {
+          setHasSubmitted(false);
+          setSelectedOption(null);
+        }
+      },
+    );
   };
 
   const myResult = roundResult?.playerResults.find((p) => p.id === playerId);
   const myScoreEntry = scoreboard.find((p) => p.id === playerId);
 
   const handleLeaveRoom = () => {
-    sessionStorage.removeItem('quiz_socket_id');
-    sessionStorage.removeItem('quiz_player_id');
-    sessionStorage.removeItem('quiz_player_token');
+    const socket = getSocket();
+    const playerToken = getSessionValue('quiz_player_token');
+    if (roomId && socket.connected) {
+      socket.emit('player:leave_room', {
+        roomId,
+        playerToken: playerToken || undefined,
+      });
+    }
+    clearPlayerSession();
     navigate('/');
   };
 
@@ -332,7 +488,14 @@ export const PlayerRoom = () => {
                 <Typography variant="body1" color="text.secondary">
                   Você está jogando como:
                 </Typography>
-                <Title variant="h3" sx={{ color: '#ff0a69', WebkitTextFillColor: '#ff0a69', textShadow: '2px 2px 0px rgba(0,0,0,0.2)' }}>
+                <Title
+                  variant="h3"
+                  sx={{
+                    color: '#ff0a69',
+                    WebkitTextFillColor: '#ff0a69',
+                    textShadow: '2px 2px 0px rgba(0,0,0,0.2)',
+                  }}
+                >
                   {playerName}
                 </Title>
               </Box>
@@ -356,6 +519,9 @@ export const PlayerRoom = () => {
                   flexWrap: 'wrap',
                   gap: 1.5,
                   justifyContent: 'center',
+                  alignContent: 'flex-start',
+                  maxHeight: 280,
+                  overflowY: 'auto',
                   p: 2,
                   bgcolor: '#f9f9f9',
                   borderRadius: 2,
@@ -374,10 +540,22 @@ export const PlayerRoom = () => {
                         {p.name[0]}
                       </Avatar>
                     }
-                    label={p.name + (p.id === playerId ? ' (Você)' : '')}
+                    label={
+                      p.name +
+                      (p.id === playerId
+                        ? ' (Você)'
+                        : p.connected === false
+                          ? ' (desconectado)'
+                          : '')
+                    }
                     variant={p.id === playerId ? 'filled' : 'outlined'}
                     color={p.id === playerId ? 'primary' : 'default'}
-                    sx={{ fontSize: '1rem', py: 2 }}
+                    sx={{
+                      fontSize: '1rem',
+                      py: 2,
+                      opacity:
+                        p.id !== playerId && p.connected === false ? 0.55 : 1,
+                    }}
                   />
                 ))}
               </Box>
@@ -495,7 +673,14 @@ export const PlayerRoom = () => {
               myResult.isCorrect ? (
                 <Stack spacing={2} alignItems="center">
                   <CheckCircle2 color="#2e7d32" size={72} />
-                  <Title variant="h3" sx={{ color: '#2e7d32', WebkitTextFillColor: '#2e7d32', textShadow: '2px 2px 0px rgba(0,0,0,0.2)' }}>
+                  <Title
+                    variant="h3"
+                    sx={{
+                      color: '#2e7d32',
+                      WebkitTextFillColor: '#2e7d32',
+                      textShadow: '2px 2px 0px rgba(0,0,0,0.2)',
+                    }}
+                  >
                     Você Acertou!
                   </Title>
                   <Chip
@@ -516,13 +701,20 @@ export const PlayerRoom = () => {
               ) : (
                 <Stack spacing={2} alignItems="center">
                   <XCircle color="#d32f2f" size={72} />
-                  <Title variant="h3" sx={{ color: '#d32f2f', WebkitTextFillColor: '#d32f2f', textShadow: '2px 2px 0px rgba(0,0,0,0.2)' }}>
-                    {selectedOption === null
+                  <Title
+                    variant="h3"
+                    sx={{
+                      color: '#d32f2f',
+                      WebkitTextFillColor: '#d32f2f',
+                      textShadow: '2px 2px 0px rgba(0,0,0,0.2)',
+                    }}
+                  >
+                    {!myResult.answered
                       ? 'Tempo Esgotado!'
                       : 'Que Pena, Você Errou!'}
                   </Title>
                   <Typography variant="h6" color="text.secondary">
-                    {selectedOption === null
+                    {!myResult.answered
                       ? 'Você não selecionou nenhuma resposta a tempo.'
                       : 'Mais sorte na próxima pergunta!'}
                   </Typography>
@@ -564,7 +756,14 @@ export const PlayerRoom = () => {
                 textAlign: 'center',
               }}
             >
-              <Title variant="h4" sx={{ color: '#ff0a69', WebkitTextFillColor: '#ff0a69', textShadow: '2px 2px 0px rgba(0,0,0,0.1)' }}>
+              <Title
+                variant="h4"
+                sx={{
+                  color: '#ff0a69',
+                  WebkitTextFillColor: '#ff0a69',
+                  textShadow: '2px 2px 0px rgba(0,0,0,0.1)',
+                }}
+              >
                 Sua Posição: {myScoreEntry.rank}º Lugar
               </Title>
               <Typography variant="h6" fontWeight="bold" color="#ff0a69" mt={1}>
@@ -610,7 +809,14 @@ export const PlayerRoom = () => {
           >
             {myScoreEntry && (
               <Box mb={4}>
-                <Title variant="h3" sx={{ color: '#ff0a69', WebkitTextFillColor: '#ff0a69', textShadow: '2px 2px 0px rgba(0,0,0,0.2)' }}>
+                <Title
+                  variant="h3"
+                  sx={{
+                    color: '#ff0a69',
+                    WebkitTextFillColor: '#ff0a69',
+                    textShadow: '2px 2px 0px rgba(0,0,0,0.2)',
+                  }}
+                >
                   Você terminou em {myScoreEntry.rank}º Lugar!
                 </Title>
                 <Typography variant="h5" color="text.secondary">
