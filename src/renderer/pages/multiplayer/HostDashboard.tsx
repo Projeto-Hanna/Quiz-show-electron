@@ -45,6 +45,8 @@ import {
 import { getSocket } from '../../services/socket';
 import { getSyncCountdown } from '../../utils/syncTimer';
 import { useLobbyRoster, type RosterEvent } from '../../utils/lobbyRoster';
+import { clearHostToken, getHostToken } from '../../utils/hostSession';
+import { useAutoRedirect } from '../../utils/useAutoRedirect';
 import { useSettings } from '../../context/useSettings';
 import type {
   LobbyCounts,
@@ -63,6 +65,8 @@ type HostPhase =
   | 'ROUND_RESULT'
   | 'SCOREBOARD'
   | 'FINISHED';
+
+const SESSION_LOST_REDIRECT_SECONDS = 5;
 
 export const HostDashboard = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -86,6 +90,11 @@ export const HostDashboard = () => {
   const [scoreboard, setScoreboard] = useState<ScoreboardEntry[]>([]);
   const [copiedNotification, setCopiedNotification] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [sessionLost, setSessionLost] = useState<{
+    title: string;
+    message: string;
+  } | null>(null);
+  const isSessionLostRef = useRef(false);
   const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);
   const [isStartingGame, setIsStartingGame] = useState(false);
 
@@ -101,20 +110,18 @@ export const HostDashboard = () => {
   const hasEndedRoundRef = useRef(false);
   const deadlineRef = useRef<number>(0);
 
-  const getStoredHostToken = () =>
-    sessionStorage.getItem('quiz_host_token') ||
-    localStorage.getItem('quiz_host_token');
+  const getStoredHostToken = () => getHostToken(roomId);
 
   useEffect(() => {
     if (!roomId) return;
     const socket = getSocket();
 
     const rejoinHost = () => {
-      const hostToken = getStoredHostToken();
+      if (isSessionLostRef.current) return;
+      const hostToken = getHostToken(roomId);
       if (!hostToken) {
-        setErrorMessage(
-          'Sessão de host não encontrada. Volte ao menu principal.',
-        );
+        // Without a host token there is nothing to recover: go back to the menu.
+        navigate('/', { replace: true });
         return;
       }
 
@@ -181,9 +188,16 @@ export const HostDashboard = () => {
               setPhase('LOBBY');
             }
           } else {
-            setErrorMessage(
-              res.error || 'Não foi possível reconectar à sala como host.',
-            );
+            // The room no longer exists (expired, server restarted) or the token
+            // is invalid: nothing to recover, so show why and leave to the menu.
+            // Only this room's token is cleared; other rooms stay untouched.
+            isSessionLostRef.current = true;
+            clearHostToken(roomId);
+            setSessionLost({
+              title: 'Sala Indisponível',
+              message:
+                res.error || 'Não foi possível reconectar à sala como host.',
+            });
           }
         },
       );
@@ -264,7 +278,7 @@ export const HostDashboard = () => {
       ) {
         hasEndedRoundRef.current = true;
         const socket = getSocket();
-        const hostToken = getStoredHostToken();
+        const hostToken = getHostToken(roomId);
         socket.emit('host:end_round', { roomId, hostToken });
       }
     };
@@ -299,7 +313,19 @@ export const HostDashboard = () => {
       hasEndedRoundRef.current = false;
     };
 
+    // The server closed the room on its own (e.g. inactivity cleanup).
+    const handleRoomClosed = (data: { reason?: string }) => {
+      if (isSessionLostRef.current) return;
+      isSessionLostRef.current = true;
+      clearHostToken(roomId);
+      setSessionLost({
+        title: 'Sala Encerrada',
+        message: data?.reason || 'A sala foi encerrada pelo servidor.',
+      });
+    };
+
     socket.on('connect', handleConnect);
+    socket.on('room:closed', handleRoomClosed);
     socket.on('room:player_joined', handlePlayerJoined);
     socket.on('room:player_left', handlePlayerLeft);
     socket.on('room:player_connection', handlePlayerConnection);
@@ -313,6 +339,7 @@ export const HostDashboard = () => {
 
     return () => {
       socket.off('connect', handleConnect);
+      socket.off('room:closed', handleRoomClosed);
       socket.off('room:player_joined', handlePlayerJoined);
       socket.off('room:player_left', handlePlayerLeft);
       socket.off('room:player_connection', handlePlayerConnection);
@@ -325,7 +352,7 @@ export const HostDashboard = () => {
       socket.off('game:reset_to_lobby', handleResetToLobby);
       if (resyncTimer) clearTimeout(resyncTimer);
     };
-  }, [roomId, setPlayers, applyRosterEvent, playersRef]);
+  }, [roomId, navigate, setPlayers, applyRosterEvent, playersRef]);
 
   // Host countdown effect
   useEffect(() => {
@@ -357,6 +384,17 @@ export const HostDashboard = () => {
 
     return () => clearInterval(timer);
   }, [phase, currentQuestion]);
+
+  const handleLeaveLostSession = () => {
+    navigate('/', { replace: true });
+  };
+
+  // Leave automatically shortly after showing why the room is unavailable
+  const { remainingSeconds: sessionLostRemaining } = useAutoRedirect(
+    Boolean(sessionLost),
+    SESSION_LOST_REDIRECT_SECONDS,
+    handleLeaveLostSession,
+  );
 
   const handleCopyCode = () => {
     if (roomId) {
@@ -452,8 +490,7 @@ export const HostDashboard = () => {
     const socket = getSocket();
     const hostToken = getStoredHostToken();
     socket.emit('host:cancel_room', { roomId, hostToken });
-    sessionStorage.removeItem('quiz_host_token');
-    localStorage.removeItem('quiz_host_token');
+    clearHostToken(roomId);
     navigate(path);
   };
 
@@ -479,6 +516,31 @@ export const HostDashboard = () => {
 
   return (
     <main>
+      <Dialog
+        open={Boolean(sessionLost)}
+        onClose={handleLeaveLostSession}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Text fontWeight="bold" variant="h5">
+            {sessionLost?.title}
+          </Text>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Text>{sessionLost?.message}</Text>
+          <Text variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Você será levado ao menu principal em {sessionLostRemaining}{' '}
+            {sessionLostRemaining === 1 ? 'segundo' : 'segundos'}.
+          </Text>
+        </DialogContent>
+        <DialogActions>
+          <Button size="small" fitContent onClick={handleLeaveLostSession}>
+            Ir para o Menu
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Dialog
         open={Boolean(errorMessage)}
         onClose={() => setErrorMessage('')}

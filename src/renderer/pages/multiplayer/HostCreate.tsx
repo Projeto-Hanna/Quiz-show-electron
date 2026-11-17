@@ -26,6 +26,7 @@ import {
 import { getSocket } from '../../services/socket';
 import type { Question } from '../../types';
 import { DEFAULT_QUESTIONS } from '../../utils/defaultQuestions';
+import { saveHostToken } from '../../utils/hostSession';
 
 import { useSettings } from '../../context/useSettings';
 
@@ -103,8 +104,7 @@ export const HostCreate = () => {
         setIsCreating(false);
         if (response.success && response.roomId) {
           if (response.hostToken) {
-            sessionStorage.setItem('quiz_host_token', response.hostToken);
-            localStorage.setItem('quiz_host_token', response.hostToken);
+            saveHostToken(response.roomId, response.hostToken);
           }
           navigate(`/multiplayer/host/${response.roomId}`);
         } else {

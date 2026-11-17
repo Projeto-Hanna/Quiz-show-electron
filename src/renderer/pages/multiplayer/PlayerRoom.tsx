@@ -30,6 +30,7 @@ import {
 import { getSocket } from '../../services/socket';
 import { getSyncCountdown } from '../../utils/syncTimer';
 import { useLobbyRoster, type RosterEvent } from '../../utils/lobbyRoster';
+import { useAutoRedirect } from '../../utils/useAutoRedirect';
 import type {
   LobbyCounts,
   LobbySummary,
@@ -68,6 +69,18 @@ const clearPlayerSession = (): void => {
     localStorage.removeItem(key);
   });
 };
+
+type RoomExitReason = 'unavailable' | 'closed' | 'kicked';
+
+const ROOM_EXIT_TITLES: Record<RoomExitReason, string> = {
+  unavailable: 'Sala Indisponível',
+  closed: 'Sala Encerrada',
+  kicked: 'Removido da Sala',
+};
+
+const ROOM_CLOSED_REDIRECT_SECONDS = 5;
+// Longer when the game already ended, so players can still look at the podium.
+const FINISHED_ROOM_CLOSED_REDIRECT_SECONDS = 15;
 
 export const PlayerRoom = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -108,7 +121,10 @@ export const PlayerRoom = () => {
   const [remainingTime, setRemainingTime] = useState(15);
   const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
   const [scoreboard, setScoreboard] = useState<ScoreboardEntry[]>([]);
-  const [roomClosedMessage, setRoomClosedMessage] = useState('');
+  const [roomExit, setRoomExit] = useState<{
+    reason: RoomExitReason;
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!roomId) return;
@@ -175,6 +191,7 @@ export const PlayerRoom = () => {
           summary?: LobbySummary;
           sync?: RoomSyncState;
           error?: string;
+          code?: 'KICKED';
         }) => {
           if (res.success) {
             if (socket.id) {
@@ -203,11 +220,14 @@ export const PlayerRoom = () => {
               setPhase('LOBBY');
             }
           } else {
+            // The room no longer exists (or can't be rejoined): show why and
+            // leave to the menu automatically.
             isRoomTerminatedRef.current = true;
             clearPlayerSession();
-            setRoomClosedMessage(
-              res.error || 'Não foi possível reconectar à sala.',
-            );
+            setRoomExit({
+              reason: res.code === 'KICKED' ? 'kicked' : 'unavailable',
+              message: res.error || 'Não foi possível reconectar à sala.',
+            });
           }
         },
       );
@@ -323,15 +343,19 @@ export const PlayerRoom = () => {
     const handleRoomClosed = (data: { reason?: string }) => {
       isRoomTerminatedRef.current = true;
       clearPlayerSession();
-      setRoomClosedMessage(data.reason || 'A sala foi encerrada pelo Host.');
+      setRoomExit({
+        reason: 'closed',
+        message: data?.reason || 'A sala foi encerrada pelo Host.',
+      });
     };
 
     const handleKicked = (data: { reason?: string }) => {
       isRoomTerminatedRef.current = true;
       clearPlayerSession();
-      setRoomClosedMessage(
-        data.reason || 'Você foi removido da sala pelo Host.',
-      );
+      setRoomExit({
+        reason: 'kicked',
+        message: data?.reason || 'Você foi removido da sala pelo Host.',
+      });
     };
 
     socket.on('connect', handleConnect);
@@ -429,10 +453,31 @@ export const PlayerRoom = () => {
   const myResult = roundResult?.playerResults.find((p) => p.id === playerId);
   const myScoreEntry = scoreboard.find((p) => p.id === playerId);
 
+  const redirectSeconds =
+    phase === 'FINISHED'
+      ? FINISHED_ROOM_CLOSED_REDIRECT_SECONDS
+      : ROOM_CLOSED_REDIRECT_SECONDS;
+
+  const handleLeaveAfterExit = () => {
+    clearPlayerSession();
+    navigate('/', { replace: true });
+  };
+
+  // Leave automatically shortly after showing why the player is out of the room
+  // (room unavailable on rejoin, closed by the Host, or player kicked).
+  const {
+    remainingSeconds: exitRemaining,
+    isCancelled: isExitRedirectCancelled,
+    cancel: cancelExitRedirect,
+  } = useAutoRedirect(Boolean(roomExit), redirectSeconds, handleLeaveAfterExit);
+
+  const canStayOnResults =
+    roomExit?.reason === 'closed' && phase === 'FINISHED';
+
   const handleLeaveRoom = () => {
     const socket = getSocket();
     const playerToken = getSessionValue('quiz_player_token');
-    if (roomId && socket.connected) {
+    if (roomId && socket.connected && !isRoomTerminatedRef.current) {
       socket.emit('player:leave_room', {
         roomId,
         playerToken: playerToken || undefined,
@@ -444,23 +489,32 @@ export const PlayerRoom = () => {
 
   return (
     <main>
-      {/* Dialog for Room Closed */}
+      {/* Dialog shown when the player is out of the room */}
       <Dialog
-        open={Boolean(roomClosedMessage)}
-        onClose={handleLeaveRoom}
+        open={Boolean(roomExit) && !isExitRedirectCancelled}
+        onClose={canStayOnResults ? cancelExitRedirect : handleLeaveAfterExit}
         maxWidth="sm"
         fullWidth
       >
         <DialogTitle>
           <Text fontWeight="bold" variant="h5">
-            Sala Encerrada
+            {roomExit && ROOM_EXIT_TITLES[roomExit.reason]}
           </Text>
         </DialogTitle>
         <DialogContent dividers>
-          <Text>{roomClosedMessage}</Text>
+          <Text>{roomExit?.message}</Text>
+          <Text variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Você será levado ao menu principal em {exitRemaining}{' '}
+            {exitRemaining === 1 ? 'segundo' : 'segundos'}.
+          </Text>
         </DialogContent>
         <DialogActions>
-          <Button size="small" fitContent onClick={handleLeaveRoom}>
+          {canStayOnResults && (
+            <Button size="small" fitContent onClick={cancelExitRedirect}>
+              Continuar Vendo o Resultado
+            </Button>
+          )}
+          <Button size="small" fitContent onClick={handleLeaveAfterExit}>
             Ir para o Início
           </Button>
         </DialogActions>
@@ -865,7 +919,9 @@ export const PlayerRoom = () => {
                 color="text.secondary"
                 fontStyle="italic"
               >
-                Aguardando o anfitrião reiniciar a partida...
+                {roomExit
+                  ? 'A sala foi encerrada. Obrigado por jogar!'
+                  : 'Aguardando o anfitrião reiniciar a partida...'}
               </Typography>
             </Box>
 

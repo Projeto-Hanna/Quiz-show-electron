@@ -70,8 +70,7 @@ export const PlayerJoin = () => {
       .trim()
       .toLowerCase();
     const existingToken =
-      savedRoomId === cleanRoomId &&
-        savedPlayerName === cleanName.toLowerCase()
+      savedRoomId === cleanRoomId && savedPlayerName === cleanName.toLowerCase()
         ? localStorage.getItem('quiz_player_token') || undefined
         : undefined;
 
